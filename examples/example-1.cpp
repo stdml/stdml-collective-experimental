@@ -4,7 +4,7 @@
 
 int main()
 {
-    stdml::collective::peer peer;
+    auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
 
     const int n = 1 << 10;

@@ -7,7 +7,8 @@ SET(LIBRARY_OUTPUT_PATH lib)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 
-ADD_LIBRARY(stdml-collective src/stdml/collective.cpp)
+FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
+ADD_LIBRARY(stdml-collective ${SRCS})
 
 INCLUDE(cmake/examples.cmake)
 INCLUDE(cmake/tests.cmake)
