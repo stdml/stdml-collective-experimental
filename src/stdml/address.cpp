@@ -1,4 +1,5 @@
 #include <array>
+#include <string>
 
 #include <stdml/bits/address.hpp>
 
@@ -14,7 +15,6 @@ std::array<uint8_t, 4> unpack(uint32_t x)
 
 namespace stdml::collective
 {
-
 std::string peer_id::hostname() const
 {
     const auto [a, b, c, d] = unpack(ipv4);

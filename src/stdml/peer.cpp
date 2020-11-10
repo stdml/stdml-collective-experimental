@@ -1,11 +1,17 @@
 #include <cstdio>
 #include <cstdlib>
+#include <experimental/net>
+#include <iostream>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <stdml/collective>
+
+namespace net = std::experimental::net;
 
 static std::vector<std::string> split(const std::string &text, const char sep)
 {
@@ -33,6 +39,68 @@ std::string safe_getenv(const char *name)
 
 namespace stdml::collective
 {
+class server_impl : public server
+{
+    const peer_id self_;
+
+    net::io_context ctx_;
+    net::ip::tcp::acceptor acceptor_;
+
+    std::unique_ptr<std::thread> thread_;
+
+    void serve(const peer_id &id)
+    {
+        using endpoint = net::ip::basic_endpoint<net::ip::tcp>;
+        const auto addr = net::ip::make_address(id.hostname().c_str());
+        const endpoint ep(addr, id.port);
+
+        std::experimental::net::io_context ctx_;
+        std::experimental::net::ip::tcp::acceptor acceptor_{ctx_};
+
+        acceptor_.open(ep.protocol());
+        acceptor_.bind(ep);
+        acceptor_.listen(5);
+        for (;;) {
+            auto socket = acceptor_.accept();
+            std::cout << "after accept" << std::endl;
+            const char msg[] = "HTTP/1.1 200 OK\r\n\r\nOK\n";
+            net::const_buffer buf(msg, strlen(msg));
+            socket.write_some(buf);
+            socket.close();
+        }
+    }
+
+  public:
+    server_impl(const peer_id self) : self_(self), acceptor_(ctx_) {}
+
+    ~server_impl()
+    {
+        std::cout << __func__ << std::endl;
+        stop();
+    }
+
+    void start() override
+    {
+        std::cout << "starting server .. " << std::endl;
+        thread_.reset(new std::thread([this] {  //
+            serve(self_);
+        }));
+    }
+
+    void stop() override
+    {
+        if (thread_.get()) {
+            std::cout << "joining .. " << std::endl;
+            acceptor_.cancel();
+            std::cout << "canceled .. " << std::endl;
+            // acceptor_.close();
+            // std::cout << "closed .. " << std::endl;
+            thread_->join();  //
+            std::cout << "joined. " << std::endl;
+        }
+    }
+};
+
 std::optional<peer_id> parse_peer_id(const std::string &s)
 {
     uint8_t a, b, c, d;
@@ -75,5 +143,15 @@ peer peer::from_env()
     return peer(self.value(), peers.value());
 }
 
-void peer::listen() { TODO(__func__); }
+void peer::start()
+{
+    server_.reset(new server_impl(self_));
+    server_->start();
+}
+
+void peer::stop()
+{
+    std::cout << "stop peer" << std::endl;
+    server_.reset(nullptr);
+}
 }  // namespace stdml::collective
