@@ -1,3 +1,7 @@
 // -*- mode: c++ -*-
 #pragma once
 #include <stdml/bits/collective.hpp>
+#include <stdml/bits/peer.hpp>
+#include <stdml/bits/session.hpp>
+
+#define TODO(e) fprintf(stderr, "TODO: %s\n", (e));

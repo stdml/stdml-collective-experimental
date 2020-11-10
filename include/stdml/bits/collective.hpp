@@ -1,6 +1,6 @@
 #pragma once
 
-namespace stdml
+namespace stdml::collective
 {
 
 }
