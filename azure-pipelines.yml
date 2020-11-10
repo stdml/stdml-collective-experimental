@@ -1,0 +1,33 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+# - job: native
+
+#   continueOnError: true
+
+#   steps:
+
+#   - script: sudo apt install -y g++-10
+#     displayName: Install Deps
+
+#   - script: g++-10 --version
+#     # g++-10 is already the newest version (10.1.0-2ubuntu1~18.04).
+#     displayName: Check Version
+
+#   - script: make
+#     displayName: Build
+
+- job: docker
+  steps:
+
+  - script: docker build .
+    displayName: Build
