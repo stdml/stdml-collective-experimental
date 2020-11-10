@@ -4,6 +4,7 @@ set -e
 kungfu_run_flags() {
     echo -q
     echo -logdir logs
+    echo -H "127.0.0.1:4 "
     echo -np 4
 }
 
