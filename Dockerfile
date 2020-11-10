@@ -9,3 +9,4 @@ ADD . .
 
 RUN ./configure
 RUN make
+RUN ./x

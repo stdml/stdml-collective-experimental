@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace stdml::collective
@@ -12,6 +13,8 @@ struct peer_id {
     {
         return ipv4 == p.ipv4 && port == p.port;
     }
+
+    std::string hostname() const;
 };
 
 using peer_list = std::vector<peer_id>;

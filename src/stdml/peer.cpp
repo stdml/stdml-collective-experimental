@@ -74,4 +74,6 @@ peer peer::from_env()
     if (!peers) { return single(); }
     return peer(self.value(), peers.value());
 }
+
+void peer::listen() { TODO(__func__); }
 }  // namespace stdml::collective
