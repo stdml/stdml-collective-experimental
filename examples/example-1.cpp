@@ -10,6 +10,6 @@ int main()
     const int n = 1 << 10;
     std::vector<float> x(n);
     std::vector<float> y(n);
-    session.all_reduce_sum_f32(x.data(), x.data() + x.size(), y.data());
+    session.all_reduce(x.data(), x.data() + x.size(), y.data());
     return 0;
 }
