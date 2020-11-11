@@ -14,12 +14,15 @@ class session
     void all_reduce(const void *input, void *output, size_t count, int dtype,
                     int op);
 
+    void ring_handshake();
+
   public:
     session(const peer_id self, const peer_list peers)
         : peers_(peers),
           rank_(std::find(peers.begin(), peers.end(), self) - peers.begin())
     {
         printf("rank=%d\n", (int)rank_);
+        ring_handshake();
     }
 
     ~session() {}

@@ -15,6 +15,8 @@ struct peer_id {
     }
 
     std::string hostname() const;
+
+    operator std::string() const;
 };
 
 using peer_list = std::vector<peer_id>;

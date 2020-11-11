@@ -21,4 +21,10 @@ std::string peer_id::hostname() const
     return std::to_string(a) + "." + std::to_string(b) + "." +
            std::to_string(c) + "." + std::to_string(d);
 }
+
+peer_id::operator std::string() const
+{
+    return hostname() + ":" + std::to_string(port);
+}
+
 }  // namespace stdml::collective
