@@ -11,6 +11,31 @@ namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
 {
+class ioutil
+{
+    using tcp_socket = net::ip::tcp::socket;
+
+  public:
+    static size_t read(tcp_socket &socket, void *ptr, size_t n)
+    {
+        size_t got = 0;
+        while (n > 0) {
+            auto m = socket.read_some(net::buffer(ptr, n));
+            if (m == 0) { break; }
+            got += m;
+            n -= m;
+            ptr = (char *)(ptr) + m;
+        }
+        return got;
+    }
+
+    template <typename T>
+    static size_t read(tcp_socket &socket, T &t)
+    {
+        return read(socket, &t, sizeof(T));
+    }
+};
+
 class connection_impl : public connection
 {
     using tcp_endpoint = net::ip::basic_endpoint<net::ip::tcp>;
@@ -130,14 +155,11 @@ class client_impl : public client
 
 client *client_pool::require(conn_type type)
 {
-    log() << "require client of type" << type;
     std::lock_guard _(mu_);
     if (auto it = client_pool_.find(type); it != client_pool_.end()) {
-        log() << "using existing client of type" << type;
         return it->second.get();
     }
     auto client = new client_impl(self_, type);
-    log() << "created new client of type" << type;
     client_pool_[type].reset(client);
     return client;
 }
@@ -149,27 +171,16 @@ class handler_impl : public handler
     mailbox *mailbox_;
 
   public:
-    template <typename T>
-    static auto _recv(tcp_socket &socket, T &t)
-    {
-        return socket.read_some(net::buffer(&t, sizeof(T)));
-    }
-
-    static auto _recv(tcp_socket &socket, void *data, uint32_t size)
-    {
-        return socket.read_some(net::buffer(data, size));
-    }
-
     static bool recv_one_msg(tcp_socket &socket, received_message &msg)
     {
-        auto n = _recv(socket, msg.name_len);
+        auto n = ioutil::read(socket, msg.name_len);
         if (n == 0) { return false; }
         msg.name.reset(new char[msg.name_len]);
-        _recv(socket, msg.name.get(), msg.name_len);
-        _recv(socket, msg.flags);
-        _recv(socket, msg.len);
+        ioutil::read(socket, msg.name.get(), msg.name_len);
+        ioutil::read(socket, msg.flags);
+        ioutil::read(socket, msg.len);
         msg.data.reset(new char[msg.len]);
-        _recv(socket, msg.data.get(), msg.len);
+        ioutil::read(socket, msg.data.get(), msg.len);
         return true;
     }
 
@@ -197,18 +208,19 @@ class handler_impl : public handler
             }
             if (type == rchan::conn_collective) {
                 std::string name(msg.name.get(), msg.name_len);
-                log() << "got msg of type" << type << "from" << src
-                      << "with name length" << name.size();
+                // log() << "got msg of type" << type << "from" << src
+                //       << "with name length" << name.size();
                 mailbox::Q *q = mailbox_->require(src, name);
-                log() << "required queue for put " << src << "@" << name << ":"
-                      << q;
+                // log() << "required queue for put " << src << "@" << name <<
+                // ":"
+                //       << q;
                 buffer b = {
                     .data = std::move(msg.data),
                     .len = msg.len,
                 };
-                log() << "putting msg from" << src;
+                // log() << "putting msg from" << src;
                 q->put(std::move(b));
-                log() << "put msg from" << src << "into queue" << q;
+                // log() << "put msg from" << src << "into queue" << q;
             }
             // log() << "received" << i << "messages"  ;
         }

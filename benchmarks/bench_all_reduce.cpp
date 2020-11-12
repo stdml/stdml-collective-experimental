@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
     for (int i = 0; i < times; ++i) {
+        log(PRINT) << "bench step" << i;
         for (auto size : sizes) { bench_all_reduce(session, size); }
     }
     return 0;
