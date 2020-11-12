@@ -9,7 +9,7 @@ class logger
     std::ostream &os;
 
   public:
-    logger();
+    logger(std::ostream &os);
 
     ~logger();
 
@@ -21,5 +21,11 @@ class logger
     }
 };
 
-logger log();
+enum log_level {
+    INFO,
+    DEBUG,
+    PRINT,
+};
+
+logger log(log_level level = INFO);
 }  // namespace stdml::collective

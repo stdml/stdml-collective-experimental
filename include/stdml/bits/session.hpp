@@ -3,6 +3,7 @@
 #include <iterator>
 
 #include <stdml/bits/address.hpp>
+#include <stdml/bits/buffer.hpp>
 #include <stdml/bits/dtype.hpp>
 #include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/rchan.hpp>
@@ -10,17 +11,6 @@
 
 namespace stdml::collective
 {
-struct workspace {
-    const void *send;
-    void *recv;
-    size_t count;
-    dtype dt;
-    reduce_op op;
-    std::string name;
-
-    size_t data_size() const { return count * dtype_size(dt); }
-};
-
 class session
 {
     const peer_list peers_;
@@ -57,6 +47,10 @@ class session
 
     ~session() {}
 
+    size_t rank() { return rank_; }
+
+    size_t size() { return peers_.size(); }
+
     template <typename R>
     void all_reduce(const R *begin1, R *begin2, const size_t count,
                     reduce_op op = sum)
@@ -70,6 +64,14 @@ class session
     {
         const size_t count = std::distance(begin1, end1);
         all_reduce(begin1, begin2, count, type<R>(), op);
+    }
+
+    template <typename R>
+    R all_reduce(const R &x, reduce_op op = sum)
+    {
+        R y;
+        all_reduce(&x, &y, 1, op);
+        return y;
     }
 
     template <typename R>

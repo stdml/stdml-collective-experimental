@@ -8,12 +8,16 @@ namespace stdml::collective
 {
 std::mutex logger::mu_;
 
-logger::logger() : lk_(mu_), os(std::cout)
+logger::logger(std::ostream &os) : lk_(mu_), os(os)
 {
     os << "[D] " << std::this_thread::get_id();
 }
 
 logger::~logger() { os << std::endl; }
 
-logger log() { return logger(); }
+logger log(log_level level)
+{
+    if (level == PRINT) { return logger(std::cout); }
+    return logger(std::cerr);
+}
 }  // namespace stdml::collective

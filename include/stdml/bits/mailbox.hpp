@@ -3,15 +3,11 @@
 // #include <unordered_map>
 #include <map>
 
+#include <stdml/bits/buffer.hpp>
 #include <stdml/bits/channel.hpp>
 
 namespace stdml::collective
 {
-struct buffer {
-    std::unique_ptr<char[]> data;
-    uint32_t len;
-};
-
 class mailbox
 {
     using queue = channel<buffer>;

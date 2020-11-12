@@ -16,10 +16,10 @@ class connection_impl : public connection
     using tcp_endpoint = net::ip::basic_endpoint<net::ip::tcp>;
     using tcp_socket = net::ip::tcp::socket;
 
-    rchan::conn_type type_;
-    net::io_context ctx_;
-    tcp_socket socket_;
     std::mutex mu_;
+    net::io_context ctx_;
+    rchan::conn_type type_;
+    tcp_socket socket_;
 
     static void wait_connect(tcp_socket &socket, const tcp_endpoint &ep)
     {

@@ -4,6 +4,19 @@
 
 namespace stdml::collective
 {
+std::ostream &operator<<(std::ostream &os, const graph &g)
+{
+    const size_t n = g.size();
+    os << n << std::endl;
+    for (size_t i = 0; i < n; ++i) {
+        os << i << "[" << g.self_loop(i) << "]";
+        for (auto j : g.nexts(i)) { os << " ->" << j; }
+        for (auto j : g.prevs(i)) { os << " <-" << j; }
+        os << std::endl;
+    }
+    return os;
+}
+
 graph_builder::graph_builder(V n) : self_loop_(n), nexts_(n), prevs_(n)
 {
     std::fill(self_loop_.begin(), self_loop_.end(), false);
@@ -45,7 +58,8 @@ graph graph_builder::build(bool reverse, bool add_self_loops) const
     std::transform(nexts_.begin(), nexts_.end(), nexts.begin(), sort_set<V>());
     std::transform(prevs_.begin(), prevs_.end(), prevs.begin(), sort_set<V>());
 
-    if (reverse) { std::swap(prevs, nexts); }
+    if (reverse) { std::swap(nexts, prevs); }
+
     if (add_self_loops) {
         std::vector<bool> self_loop(n);
         std::fill(self_loop.begin(), self_loop.end(), true);

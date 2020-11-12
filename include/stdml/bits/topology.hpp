@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <set>
 #include <vector>
 
@@ -10,15 +11,15 @@ class graph
     using vertex_list = std::vector<V>;
 
     const std::vector<bool> self_loop_;
-    const std::vector<vertex_list> prevs_;
     const std::vector<vertex_list> nexts_;
+    const std::vector<vertex_list> prevs_;
 
   public:
     graph(std::vector<bool> self_loop,  //
-          std::vector<vertex_list> prevs, std::vector<vertex_list> nexts)
+          std::vector<vertex_list> nexts, std::vector<vertex_list> prevs)
         : self_loop_(std::move(self_loop)),
-          prevs_(std::move(prevs)),
-          nexts_(std::move(nexts))
+          nexts_(std::move(nexts)),
+          prevs_(std::move(prevs))
     {
     }
 
@@ -27,7 +28,11 @@ class graph
     const vertex_list &prevs(V i) const { return prevs_[i]; }
 
     bool self_loop(V i) const { return self_loop_[i]; }
+
+    size_t size() const { return self_loop_.size(); }
 };
+
+std::ostream &operator<<(std::ostream &os, const graph &g);
 
 class graph_builder
 {
@@ -62,6 +67,8 @@ enum strategy {
     ring,
     binary_tree,
 };
+
+graph_builder start_broadcast_graph_builder(size_t n, size_t root);
 
 graph_pair_list make_graph_pair_list(strategy s, size_t n);
 }  // namespace stdml::collective

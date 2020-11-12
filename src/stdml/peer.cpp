@@ -16,23 +16,6 @@
 #include <stdml/bits/peer.hpp>
 #include <stdml/bits/rchan.hpp>
 
-static std::vector<std::string> split(const std::string &text, const char sep)
-{
-    std::vector<std::string> lines;
-    std::string line;
-    std::istringstream ss(text);
-    while (std::getline(ss, line, sep)) {
-        if (!line.empty()) { lines.push_back(line); }
-    }
-    return lines;
-}
-
-uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
-{
-    return (static_cast<uint32_t>(a) << 24) | (static_cast<uint32_t>(b) << 16) |
-           (static_cast<uint32_t>(c) << 8) | (static_cast<uint32_t>(d));
-}
-
 std::string safe_getenv(const char *name)
 {
     const char *ptr = std::getenv(name);
@@ -40,35 +23,15 @@ std::string safe_getenv(const char *name)
     return "";
 }
 
+std::optional<int> parse_env_int(const std::string &s)
+{
+    const auto v = safe_getenv(s.c_str());
+    if (v.empty()) return {};
+    return std::stoi(v);
+}
+
 namespace stdml::collective
 {
-std::optional<peer_id> parse_peer_id(const std::string &s)
-{
-    uint8_t a, b, c, d;
-    uint16_t p;
-    if (sscanf(s.c_str(), "%hhu.%hhu.%hhu.%hhu:%hu", &a, &b, &c, &d, &p) == 5) {
-        return peer_id{
-            .ipv4 = pack(a, b, c, d),
-            .port = p,
-        };
-    }
-    return {};
-}
-
-std::optional<peer_list> parse_peer_list(const std::string &s)
-{
-    peer_list ps;
-    for (const auto &p : split(s, ',')) {
-        const auto id = parse_peer_id(p);
-        if (id) {
-            ps.push_back(id.value());
-        } else {
-            return {};
-        }
-    }
-    return ps;
-}
-
 peer::peer(const peer_id self, const peer_list init_peers)
     : self_(self),
       init_peers_(init_peers),
@@ -94,11 +57,28 @@ peer peer::from_kungfu_env()
     const auto peers = parse_peer_list(safe_getenv("KUNGFU_INIT_PEERS"));
     if (!peers) { return single(); }
     return peer(self.value(), peers.value());
-    // p.start();
-    // return std::move(p);
 }
 
-peer peer::from_env() { return from_kungfu_env(); }
+peer peer::from_ompi_env()
+{
+    const auto size = parse_env_int("OMPI_COMM_WORLD_SIZE");
+    if (!size) { return single(); }
+    const auto rank = parse_env_int("OMPI_COMM_WORLD_RANK");
+    if (!rank) { return single(); }
+    const auto ps = peer_list::gen(size.value());
+    return peer(ps[rank.value()], ps);
+}
+
+bool using_kungfu() { return std::getenv("KUNGFU_SELF_SPEC") != nullptr; }
+
+bool using_ompi() { return std::getenv("OMPI_COMM_WORLD_SIZE") != nullptr; }
+
+peer peer::from_env()
+{
+    if (using_kungfu()) { return from_kungfu_env(); }
+    if (using_ompi()) { return from_ompi_env(); }
+    return single();
+}
 
 void peer::start()
 {

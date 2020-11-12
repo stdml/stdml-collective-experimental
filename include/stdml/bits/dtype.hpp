@@ -59,4 +59,7 @@ enum reduce_op {
     max,
     prod,
 };
+
+void reduce(void *x, const void *y, const void *z, size_t count, dtype dt,
+            reduce_op op);
 }  // namespace stdml::collective
