@@ -100,7 +100,14 @@ void session::all_reduce(const void *input, void *output, size_t count,
     run_graph_pair_list(w, all_reduce_topo_);
 }
 
-void session::ring_handshake()
+void session::barrier()
+{
+    uint32_t x = 1;
+    uint32_t y = 0;
+    all_reduce(&x, &y, 1, max);
+}
+
+void session::_ring_handshake()
 {
     const size_t next_rank = (rank_ + 1) % peers_.size();
     const auto next = peers_[next_rank];

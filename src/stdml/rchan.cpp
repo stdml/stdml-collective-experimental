@@ -182,10 +182,8 @@ class handler_impl : public handler
     }
 
   public:
-    handler_impl(mailbox *mb) : mailbox_(mb)
-    {
-        //
-    }
+    handler_impl(mailbox *mb) : mailbox_(mb) {}
+
     void handle_collective(tcp_socket &socket) {}
 
     void operator()(const peer_id src, rchan::conn_type type, tcp_socket socket)
@@ -329,10 +327,6 @@ class server_impl : public server
             log() << "joining .. ";
             acceptor_.cancel();
             log() << "canceled .. ";
-            // acceptor_.close();
-            //  log() << "closed .. "  ;
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(2s);
             ctx_.stop();
             thread_->join();  //
             log() << "server thread joined.";

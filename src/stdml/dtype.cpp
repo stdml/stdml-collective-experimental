@@ -6,15 +6,28 @@ namespace stdml::collective
 {
 size_t dtype_size(dtype dt)
 {
+#define CASE(T, t)                                                             \
+    case t:                                                                    \
+        return sizeof(T);
+
     switch (dt) {
-    case _type<int8_t>::value:
-        return sizeof(int8_t);
-    case _type<int32_t>::value:
-        return sizeof(int32_t);
-    case _type<float>::value:
-        return sizeof(float);
+        CASE(int8_t, i8);
+        CASE(int16_t, i16);
+        CASE(int32_t, i32);
+        CASE(int64_t, i64);
+
+        CASE(uint8_t, u8);
+        CASE(uint16_t, u16);
+        CASE(uint32_t, u32);
+        CASE(uint64_t, u64);
+
+        CASE(float, f32);
+        CASE(double, f64);
+
     default:
         throw std::invalid_argument("");
     }
+
+#undef CASE
 }
 }  // namespace stdml::collective

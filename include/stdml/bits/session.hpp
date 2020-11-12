@@ -36,7 +36,7 @@ class session
     void broadcast(const void *input, void *output, size_t count, dtype dt);
 
     void barrier();
-    void ring_handshake();
+    void _ring_handshake();
 
   public:
     mailbox *mailbox_;                 // owned by peer
@@ -51,10 +51,18 @@ class session
           client_pool_(client_pool)
     {
         printf("rank=%d\n", (int)rank_);
-        ring_handshake();
+        // ring_handshake();
+        barrier();
     }
 
     ~session() {}
+
+    template <typename R>
+    void all_reduce(const R *begin1, R *begin2, const size_t count,
+                    reduce_op op = sum)
+    {
+        all_reduce(begin1, begin2, count, type<R>(), op);
+    }
 
     template <typename R>
     void all_reduce(const R *begin1, const R *end1, R *begin2,
