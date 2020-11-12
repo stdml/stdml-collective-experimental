@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <stdml/bits/connection.hpp>
+#include <stdml/bits/ioutil.hpp>
 #include <stdml/bits/log.hpp>
 #include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/peer.hpp>
@@ -11,12 +12,11 @@ namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
 {
-class ioutil
+template <typename Reader>
+class basic_ioutil
 {
-    using tcp_socket = net::ip::tcp::socket;
-
   public:
-    static size_t read(tcp_socket &socket, void *ptr, size_t n)
+    static size_t read(Reader &socket, void *ptr, size_t n)
     {
         size_t got = 0;
         while (n > 0) {
@@ -30,11 +30,13 @@ class ioutil
     }
 
     template <typename T>
-    static size_t read(tcp_socket &socket, T &t)
+    static size_t read(Reader &socket, T &t)
     {
         return read(socket, &t, sizeof(T));
     }
 };
+
+using ioutil = basic_ioutil<net::ip::tcp::socket>;
 
 class connection_impl : public connection
 {
@@ -236,9 +238,13 @@ class msg_handler_impl<conn_collective> : public msg_handler
         buffer b = alloc_buffer(mh->len);
         reader.read_body(b.data.get());
 
-        mailbox::Q *q = mailbox_->require(src, mh->name);
-        q->put(std::move(b));
-
+        if (mh->flags & rchan::message_header::wait_recv_buf) {
+            mailbox::Q *q = mailbox_->require(src, mh->name);
+            q->put(std::move(b));
+        } else {
+            mailbox::Q *q = mailbox_->require(src, mh->name);
+            q->put(std::move(b));
+        }
         return true;
     }
 };

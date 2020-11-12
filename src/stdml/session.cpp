@@ -58,13 +58,13 @@ struct recv {
 
     void operator()(const peer_id &id)
     {
-        // log(PRINT) << "recv from" << id << std::boolalpha << reduce;
-
-        mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
-        auto b = q->get();
         if (reduce) {
+            mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
+            auto b = q->get();
             state->add_to(b.data.get());
         } else {
+            mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
+            auto b = q->get();
             state->replace(b.data.get());
         }
     }
@@ -83,8 +83,6 @@ struct send {
 
     void operator()(const peer_id &id)
     {
-        // log(PRINT) << "send to" << id << std::boolalpha << reduce;
-
         uint32_t flags = 0;
         if (reduce) { flags |= rchan::message_header::wait_recv_buf; };
         auto client = sess->client_pool_->require(rchan::conn_collective);
