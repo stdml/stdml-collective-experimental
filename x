@@ -9,6 +9,7 @@ build() {
 run_all() {
     ./scripts/run/example-1.sh
     ./scripts/bench/1.sh
+    # ./scripts/bench/baseline.sh
 }
 
 main() {

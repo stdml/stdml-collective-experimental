@@ -36,24 +36,16 @@ std::pair<double, double> bench_all_reduce(stdml::collective::session &session,
 }
 
 double bench_step(stdml::collective::session &session,
-                  const std::vector<size_t> &sizes)
+                  std::vector<fake_cpu_buffer_t<float>> &buffers)
 {
-    std::vector<fake_cpu_buffer_t<float>> buffers;
-    for (size_t i = 0; i < sizes.size(); ++i) {
-        const std::string name = "variable:" + std::to_string(i++);
-        buffers.emplace_back(name, sizes[i]);
+    TRACE_SCOPE(__func__);
+    auto t0 = C::now();
+    for (auto &b : buffers) {
+        auto [d, g] = bench_all_reduce(session, b.send_buf, b.recv_buf);
     }
-    {
-        auto t0 = C::now();
-        for (auto &b : buffers) {
-            auto [d, g] = bench_all_reduce(session, b.send_buf, b.recv_buf);
-            // std::cout << std::format("{}", g / d) << "GiB/s" << std::endl;
-            // printf("%.3f GiB/s\n", g / d);
-        }
-        auto t1 = C::now();
-        std::chrono::duration<double> d = (t1 - t0);
-        return d.count();
-    }
+    auto t1 = C::now();
+    std::chrono::duration<double> d = (t1 - t0);
+    return d.count();
 }
 
 std::vector<size_t> read_int_list(const char *filename)
@@ -83,9 +75,15 @@ int main(int argc, char *argv[])
     stdml::collective::session session = peer.join();
     size_t multiplier = 4 * (session.size() - 1);
 
+    std::vector<fake_cpu_buffer_t<float>> buffers;
+    for (size_t i = 0; i < sizes.size(); ++i) {
+        const std::string name = "variable:" + std::to_string(i++);
+        buffers.emplace_back(name, sizes[i]);
+    }
+
     for (int i = 0; i < times; ++i) {
         log(PRINT) << "bench step" << i;
-        auto d = bench_step(session, sizes);
+        auto d = bench_step(session, buffers);
         printf("%.3f GiB/s\n", gigabytes(multiplier * tot * 4) / d);
     }
     return 0;
