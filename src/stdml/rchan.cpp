@@ -12,11 +12,11 @@ namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
 {
-template <typename Reader>
+template <typename Socket>
 class basic_ioutil
 {
   public:
-    static size_t read(Reader &socket, void *ptr, size_t n)
+    static size_t read(Socket &socket, void *ptr, size_t n)
     {
         size_t got = 0;
         while (n > 0) {
@@ -30,9 +30,28 @@ class basic_ioutil
     }
 
     template <typename T>
-    static size_t read(Reader &socket, T &t)
+    static size_t read(Socket &socket, T &t)
     {
         return read(socket, &t, sizeof(T));
+    }
+
+    static size_t write(Socket &socket, const void *ptr, size_t n)
+    {
+        size_t sent = 0;
+        while (n > 0) {
+            auto m = socket.write_some(net::buffer(ptr, n));
+            if (m == 0) { break; }
+            sent += m;
+            n -= m;
+            ptr = (char *)(ptr) + m;
+        }
+        return sent;
+    }
+
+    template <typename T>
+    static size_t write(Socket &socket, const T &t)
+    {
+        return write(socket, &t, sizeof(T));
     }
 };
 
@@ -61,17 +80,6 @@ class connection_impl : public connection
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(1s);
         }
-    }
-
-    template <typename T>
-    void _send(const T &t)
-    {
-        socket_.write_some(net::buffer(&t, sizeof(T)));
-    }
-
-    void _send(const void *data, uint32_t size)
-    {
-        socket_.write_some(net::buffer(data, size));
     }
 
   public:
@@ -108,11 +116,11 @@ class connection_impl : public connection
         };
         {
             std::lock_guard<std::mutex> _(mu_);
-            _send(mh.name_len);
-            _send(mh.name, mh.name_len);
-            _send(mh.flags);
-            _send(msg.len);
-            _send(msg.data, msg.len);
+            ioutil::write(socket_, mh.name_len);
+            ioutil::write(socket_, mh.name, mh.name_len);
+            ioutil::write(socket_, mh.flags);
+            ioutil::write(socket_, msg.len);
+            ioutil::write(socket_, msg.data, msg.len);
         }
     }
 };
@@ -182,6 +190,7 @@ class client_impl : public client
     {
         auto conn = require(target);
         conn->send(name, data, size, flags);
+        // log(PRINT) << "sent" << size;
     }
 };
 

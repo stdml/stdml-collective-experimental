@@ -22,17 +22,27 @@ double gigabytes(size_t n)
     return n / gi;
 }
 
+template <typename T>
+void pprint(const std::vector<T> &xs)
+{
+    int i = 0;
+    for (const T &x : xs) {
+        if (i++) { std::cout << ", "; }
+        std::cout << x;
+    }
+    std::cout << std::endl;
+}
+
 using C = std::chrono::high_resolution_clock;
 
-std::pair<double, double> bench_all_reduce(stdml::collective::session &session,
-                                           std::vector<float> &x,
-                                           std::vector<float> &y)
+void bench_all_reduce_one(stdml::collective::session &session,
+                          std::vector<float> &x, std::vector<float> &y)
 {
+    // TRACE_SCOPE(__func__);
     auto t0 = C::now();
     session.all_reduce(x.data(), x.data() + x.size(), y.data());
     auto t1 = C::now();
     double d = (t1 - t0).count();
-    return {d, gigabytes(x.size())};
 }
 
 double bench_step(stdml::collective::session &session,
@@ -41,7 +51,8 @@ double bench_step(stdml::collective::session &session,
     TRACE_SCOPE(__func__);
     auto t0 = C::now();
     for (auto &b : buffers) {
-        auto [d, g] = bench_all_reduce(session, b.send_buf, b.recv_buf);
+        // auto [d, g] =
+        bench_all_reduce_one(session, b.send_buf, b.recv_buf);
     }
     auto t1 = C::now();
     std::chrono::duration<double> d = (t1 - t0);
@@ -68,6 +79,8 @@ int main(int argc, char *argv[])
     const int times = std::stoi(argv[2]);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
 
+    pprint(sizes);
+
     log(PRINT) << sizes.size() << "tensors";
     log(PRINT) << "total size" << tot;
 
@@ -77,7 +90,8 @@ int main(int argc, char *argv[])
 
     std::vector<fake_cpu_buffer_t<float>> buffers;
     for (size_t i = 0; i < sizes.size(); ++i) {
-        const std::string name = "variable:" + std::to_string(i++);
+        const std::string name = "variable:" + std::to_string(i);
+        log(PRINT) << name << sizes[i];
         buffers.emplace_back(name, sizes[i]);
     }
 
