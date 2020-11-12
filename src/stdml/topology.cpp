@@ -4,18 +4,18 @@
 
 namespace stdml::collective
 {
-graph_builder::graph_builder(size_t n) : self_loop_(n), nexts_(n), prevs_(n)
+graph_builder::graph_builder(V n) : self_loop_(n), nexts_(n), prevs_(n)
 {
     std::fill(self_loop_.begin(), self_loop_.end(), false);
 }
 
-bool graph_builder::edeg_exists(size_t i, size_t j)
+bool graph_builder::edeg_exists(V i, V j)
 {
     if (i == j) { return self_loop_[i]; }
     return nexts_[i].count(j) > 0;
 }
 
-bool graph_builder::add_edge(size_t i, size_t j)
+bool graph_builder::add_edge(V i, V j)
 {
     if (edeg_exists(i, j)) { return false; }
     if (i == j) {
@@ -40,12 +40,10 @@ struct sort_set {
 graph graph_builder::build(bool reverse, bool add_self_loops) const
 {
     const size_t n = self_loop_.size();
-    std::vector<std::vector<size_t>> nexts(n);
-    std::vector<std::vector<size_t>> prevs(n);
-    std::transform(nexts_.begin(), nexts_.end(), nexts.begin(),
-                   sort_set<size_t>());
-    std::transform(prevs_.begin(), prevs_.end(), prevs.begin(),
-                   sort_set<size_t>());
+    std::vector<std::vector<V>> nexts(n);
+    std::vector<std::vector<V>> prevs(n);
+    std::transform(nexts_.begin(), nexts_.end(), nexts.begin(), sort_set<V>());
+    std::transform(prevs_.begin(), prevs_.end(), prevs.begin(), sort_set<V>());
 
     if (reverse) { std::swap(prevs, nexts); }
     if (add_self_loops) {

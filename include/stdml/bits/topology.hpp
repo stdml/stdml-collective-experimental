@@ -31,16 +31,19 @@ class graph
 
 class graph_builder
 {
-    std::vector<bool> self_loop_;
-    std::vector<std::set<size_t>> nexts_;
-    std::vector<std::set<size_t>> prevs_;
+    using V = size_t;
+    using vertex_set = std::set<V>;
 
-    bool edeg_exists(size_t i, size_t j);
+    std::vector<bool> self_loop_;
+    std::vector<vertex_set> nexts_;
+    std::vector<vertex_set> prevs_;
+
+    bool edeg_exists(V i, V j);
 
   public:
-    graph_builder(size_t n);
+    graph_builder(V n);
 
-    bool add_edge(size_t i, size_t j);
+    bool add_edge(V i, V j);
 
     graph build(bool reverse = false, bool add_self_loops = false) const;
 };
