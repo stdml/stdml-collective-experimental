@@ -15,7 +15,7 @@ class peer
     const peer_id self_;
     const peer_list init_peers_;
 
-    std::unique_ptr<rchan::client_pool> clients_;
+    std::unique_ptr<rchan::client_pool> client_pool_;
     std::unique_ptr<rchan::server> server_;
 
   public:
@@ -34,7 +34,7 @@ class peer
 
     session join()
     {
-        session sess(self_, init_peers_, clients_.get());
+        session sess(self_, init_peers_, client_pool_.get());
         return std::move(sess);
     }
 };

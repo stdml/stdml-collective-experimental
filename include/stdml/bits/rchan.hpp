@@ -38,11 +38,11 @@ struct message {
     //     flags;  // copied from Header, shouldn't be used during Read or Write
 };
 
-class handler
-{
-  public:
-    virtual void handle() = 0;
-};
+// class handler
+// {
+//   public:
+//     virtual void handle() = 0;
+// };
 
 class client
 {
@@ -58,7 +58,7 @@ class client_pool
     const peer_id self_;
 
     std::mutex mu_;
-    std::unordered_map<conn_type, std::unique_ptr<client>> clients_;
+    std::unordered_map<conn_type, std::unique_ptr<client>> client_pool_;
 
   public:
     client_pool(const peer_id self) : self_(self) {}

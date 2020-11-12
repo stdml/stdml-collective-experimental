@@ -16,6 +16,8 @@ struct workspace {
     dtype dt;
     reduce_op op;
     std::string name;
+
+    size_t data_size() const { return count * dtype_size(dt); }
 };
 
 class session
@@ -25,7 +27,7 @@ class session
 
     graph_pair_list all_reduce_topo_;
 
-    rchan::client_pool *clients_;  // owned by peer
+    rchan::client_pool *client_pool_;  // owned by peer
 
     void run_graphs(const workspace &w, const std::vector<const graph *> &gs);
     void run_graph_pair_list(const workspace &w, const graph_pair_list &gps);
@@ -39,11 +41,11 @@ class session
 
   public:
     session(const peer_id self, const peer_list peers,
-            rchan::client_pool *clients, const strategy s = star)
+            rchan::client_pool *client_pool, const strategy s = star)
         : peers_(peers),
           rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
           all_reduce_topo_(make_graph_pair_list(s, peers.size())),
-          clients_(clients)
+          client_pool_(client_pool)
     {
         printf("rank=%d\n", (int)rank_);
         ring_handshake();

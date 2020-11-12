@@ -7,15 +7,37 @@
 namespace stdml::collective
 {
 struct recv {
-    recv(bool reduce) {}
+    const workspace *w;
+    const bool reduce;
+    rchan::client *client;
 
-    void operator()(const peer_id &id) {}
+    recv(const workspace *w, rchan::client *client, bool reduce)
+        : w(w), reduce(reduce), client(client)
+    {
+    }
+
+    void operator()(const peer_id &id)
+    {
+        // client->send(id, w->name, w->send, 1);  //
+    }
 };
 
 struct send {
-    send(bool reduce) {}
+    const workspace *w;
+    const bool reduce;
+    rchan::client *client;
 
-    void operator()(const peer_id &id) {}
+    send(const workspace *w, rchan::client *client, bool reduce)
+        : w(w), reduce(reduce), client(client)
+    {
+    }
+
+    void operator()(const peer_id &id)
+    {
+        uint32_t flags = 0;
+        if (reduce) { flags |= rchan::message_header::wait_recv_buf; };
+        client->send(id, w->name.c_str(), w->send, w->data_size(), flags);  //
+    }
 };
 
 template <typename F>
@@ -33,15 +55,16 @@ void seq(F f, const peer_list &ps)
 void session::run_graphs(const workspace &w,
                          const std::vector<const graph *> &gs)
 {
+    auto client = client_pool_->require(rchan::conn_collective);
     for (const auto g : gs) {
-        const auto prevs = peers_.select_ranks(g->prevs(rank_));
-        const auto nexts = peers_.select_ranks(g->nexts(rank_));
+        const auto prevs = peers_[g->prevs(rank_)];
+        const auto nexts = peers_[g->nexts(rank_)];
         if (g->self_loop(rank_)) {
-            par(recv(true), prevs);
-            par(send(true), nexts);
+            par(recv(&w, client, true), prevs);
+            par(send(&w, client, true), nexts);
         } else {
-            seq(recv(false), prevs);
-            par(send(false), nexts);
+            seq(recv(&w, client, false), prevs);
+            par(send(&w, client, false), nexts);
         }
     }
 }
@@ -72,10 +95,8 @@ void session::ring_handshake()
 {
     const size_t next_rank = (rank_ + 1) % peers_.size();
     const auto next = peers_[next_rank];
-
     std::cout << "next: " << (std::string)next << std::endl;
-    // connection::dial(next, rchan::conn_ping, peers_[rank_]);
-    auto client = clients_->require(rchan::conn_ping);
+    auto client = client_pool_->require(rchan::conn_ping);
     using namespace std::string_literals;
     const auto msg = "hello world"s;
     client->send(next, "ping", msg.data(), msg.size());

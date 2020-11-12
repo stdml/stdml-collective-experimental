@@ -25,6 +25,11 @@ template <typename T>
 struct _type;
 
 template <>
+struct _type<int8_t> {
+    static constexpr dtype value = i8;
+};
+
+template <>
 struct _type<int32_t> {
     static constexpr dtype value = i32;
 };
@@ -39,6 +44,8 @@ constexpr dtype type()
 {
     return _type<T>::value;
 }
+
+size_t dtype_size(dtype dt);
 
 enum reduce_op {
     sum,

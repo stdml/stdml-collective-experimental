@@ -70,7 +70,7 @@ std::optional<peer_list> parse_peer_list(const std::string &s)
 peer::peer(const peer_id self, const peer_list init_peers)
     : self_(self),
       init_peers_(init_peers),
-      clients_(new rchan::client_pool(self_))
+      client_pool_(new rchan::client_pool(self_))
 {
     start();
 }

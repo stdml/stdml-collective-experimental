@@ -54,7 +54,7 @@ class connection_impl : public connection
         const auto addr = net::ip::make_address(remote.hostname().c_str());
         const tcp_endpoint ep(addr, remote.port);
         wait_connect(socket_, ep);
-        rchan::conn_header h = {
+        conn_header h = {
             .type = type,
             .src_port = local.port,
             .src_ipv4 = local.ipv4,
@@ -133,15 +133,71 @@ client *client_pool::require(conn_type type)
 {
     std::cout << "require client of type " << type << std::endl;
     std::lock_guard _(mu_);
-    if (auto it = clients_.find(type); it != clients_.end()) {
+    if (auto it = client_pool_.find(type); it != client_pool_.end()) {
         std::cout << "using existing client of type " << type << std::endl;
         return it->second.get();
     }
     auto client = new client_impl(self_, type);
     std::cout << "created new client of type " << type << std::endl;
-    clients_[type].reset(client);
+    client_pool_[type].reset(client);
     return client;
 }
+
+class handler
+{
+    using tcp_socket = net::ip::tcp::socket;
+
+  public:
+    template <typename T>
+    static void _recv(tcp_socket &socket, T &t)
+    {
+        socket.read_some(net::buffer(&t, sizeof(T)));
+    }
+
+    static void _recv(tcp_socket &socket, void *data, uint32_t size)
+    {
+        socket.read_some(net::buffer(data, size));
+    }
+
+    static void recv_one_msg(tcp_socket &socket)
+    {
+        message_header mh;
+        std::string name;
+        std::string body;
+
+        message msg;
+        {
+            _recv(socket, mh.name_len);
+            name = std::string(mh.name_len, '\0');
+            _recv(socket, name.data(), mh.name_len);
+            _recv(socket, mh.flags);
+        }
+        {
+            _recv(socket, msg.len);
+            body = std::string(msg.len, '\0');
+            _recv(socket, body.data(), msg.len);
+        }
+
+        std::cout << "name: " << name << ", body: " << body << std::endl;
+    }
+
+    static void recv_msgs(tcp_socket &socket, int n)
+    {
+        for (int i = 0; i < n; ++i) { recv_one_msg(socket); }
+    }
+
+  public:
+    handler(conn_type type)
+    {
+        //
+    }
+
+    void operator()(tcp_socket socket)
+    {
+        recv_msgs(socket, 1);
+        socket.close();
+    }
+};
 
 class server_impl : public server
 {
@@ -172,9 +228,9 @@ class server_impl : public server
         }
     }
 
-    void upgrade(tcp_socket &socket)
+    conn_header upgrade(tcp_socket &socket)
     {
-        rchan::conn_header h;
+        conn_header h;
         socket.read_some(net::buffer(&h, sizeof(h)));
         peer_id src = {
             .ipv4 = h.src_ipv4,
@@ -182,51 +238,14 @@ class server_impl : public server
         };
         std::cout << "got connection from " << (std::string)src << " of type "
                   << h.type << std::endl;
-    }
-
-    template <typename T>
-    void _recv(tcp_socket &socket, T &t)
-    {
-        socket.read_some(net::buffer(&t, sizeof(T)));
-    }
-
-    void _recv(tcp_socket &socket, void *data, uint32_t size)
-    {
-        socket.read_some(net::buffer(data, size));
-    }
-
-    void recv_one_msg(tcp_socket &socket)
-    {
-        rchan::message_header mh;
-        std::string name;
-        std::string body;
-
-        rchan::message msg;
-        {
-            _recv(socket, mh.name_len);
-            name = std::string(mh.name_len, '\0');
-            _recv(socket, name.data(), mh.name_len);
-            _recv(socket, mh.flags);
-        }
-        {
-            _recv(socket, msg.len);
-            body = std::string(msg.len, '\0');
-            _recv(socket, body.data(), msg.len);
-        }
-
-        std::cout << "name: " << name << ", body: " << body << std::endl;
-    }
-
-    void recv_msgs(tcp_socket &socket, int n)
-    {
-        for (int i = 0; i < n; ++i) { recv_one_msg(socket); }
+        return h;
     }
 
     void handle(tcp_socket socket)
     {
-        upgrade(socket);
-        recv_msgs(socket, 1);
-        socket.close();
+        const auto chdr = upgrade(socket);
+        handler h(chdr.type);
+        h(std::move(socket));
         std::cout << "handle finished" << std::endl;
     }
 

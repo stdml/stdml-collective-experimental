@@ -31,11 +31,14 @@ class peer_list : public std::vector<peer_id>
     using parent::parent;
 
   public:
-    peer_list select_ranks(const std::vector<size_t> &ranks) const
+    using parent::operator[];
+
+    template <typename I>
+    peer_list operator[](const std::vector<I> &ranks) const
     {
         peer_list ps;
         ps.reserve(ranks.size());
-        for (auto i : ranks) { ps.push_back((*this)[i]); }
+        for (auto i : ranks) { ps.push_back(parent::operator[](i)); }
         return ps;
     }
 };
