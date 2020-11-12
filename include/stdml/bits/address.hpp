@@ -17,7 +17,26 @@ struct peer_id {
     std::string hostname() const;
 
     operator std::string() const;
+
+    uint64_t hash() const
+    {
+        return (static_cast<uint64_t>(ipv4) << 32) |
+               static_cast<uint64_t>(port);
+    }
 };
 
-using peer_list = std::vector<peer_id>;
+class peer_list : public std::vector<peer_id>
+{
+    using parent = std::vector<peer_id>;
+    using parent::parent;
+
+  public:
+    peer_list select_ranks(const std::vector<size_t> &ranks) const
+    {
+        peer_list ps;
+        ps.reserve(ranks.size());
+        for (auto i : ranks) { ps.push_back((*this)[i]); }
+        return ps;
+    }
+};
 }  // namespace stdml::collective

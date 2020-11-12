@@ -1,5 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 
 namespace stdml::collective::rchan
 {
@@ -39,5 +42,35 @@ class handler
 {
   public:
     virtual void handle() = 0;
+};
+
+class client
+{
+  public:
+    virtual ~client() = default;
+
+    virtual void send(const peer_id target, const char *name, const void *data,
+                      size_t size, uint32_t flags = 0) = 0;
+};
+
+class client_pool
+{
+    const peer_id self_;
+
+    std::mutex mu_;
+    std::unordered_map<conn_type, std::unique_ptr<client>> clients_;
+
+  public:
+    client_pool(const peer_id self) : self_(self) {}
+
+    client *require(conn_type type);
+};
+
+class server
+{
+  public:
+    virtual void start() = 0;
+    virtual void stop() = 0;
+    virtual ~server() = default;
 };
 }  // namespace stdml::collective::rchan

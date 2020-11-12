@@ -25,6 +25,8 @@ class graph
     const vertex_list &nexts(V i) const { return nexts_[i]; }
 
     const vertex_list &prevs(V i) const { return prevs_[i]; }
+
+    bool self_loop(V i) const { return self_loop_[i]; }
 };
 
 class graph_builder

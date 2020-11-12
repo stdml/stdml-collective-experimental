@@ -2,6 +2,7 @@
 #include <coroutine>
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 
 #include <stdml/bits/address.hpp>
 #include <stdml/bits/rchan.hpp>
@@ -9,39 +10,31 @@
 
 namespace stdml::collective
 {
-class server
-{
-  public:
-    virtual void start() = 0;
-    virtual void stop() = 0;
-    virtual ~server() = default;
-};
-
 class peer
 {
     const peer_id self_;
     const peer_list init_peers_;
 
-    std::unique_ptr<server> server_;
-
-    peer(const peer_id self, const peer_list init_peers)
-        : self_(self), init_peers_(init_peers)
-    {
-        start();
-    }
+    std::unique_ptr<rchan::client_pool> clients_;
+    std::unique_ptr<rchan::server> server_;
 
   public:
     static peer single();
+
+    static peer from_kungfu_env();
+    static peer from_ompi_env();
     static peer from_env();
 
-    ~peer() { stop(); }
+    peer(const peer_id self, const peer_list init_peers);
+
+    ~peer();
 
     void start();
     void stop();
 
     session join()
     {
-        session sess(self_, init_peers_);
+        session sess(self_, init_peers_, clients_.get());
         return std::move(sess);
     }
 };
