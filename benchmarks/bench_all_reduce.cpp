@@ -75,11 +75,12 @@ int main(int argc, char *argv[])
 
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
+    size_t multiplier = 4 * (session.size() - 1);
 
     for (int i = 0; i < times; ++i) {
         log(PRINT) << "bench step" << i;
         auto d = bench_step(session, sizes);
-        printf("%.3f GiB/s\n", gigabytes(tot * 4) / d);
+        printf("%.3f GiB/s\n", gigabytes(multiplier * tot * 4) / d);
     }
     return 0;
 }

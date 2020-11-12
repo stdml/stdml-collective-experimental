@@ -341,9 +341,10 @@ class server_impl : public server
             log() << "canceled .. ";
             ctx_.stop();
             thread_->join();  //
-            log() << "server thread joined.";
+            log() << "serving thread joined.";
             for (auto &th : handle_threads_) { th->join(); }
-            log() << "all client threads joined.";
+            log() << "all" << handle_threads_.size()
+                  << "handling threads joined.";
         }
     }
 };
