@@ -6,6 +6,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(LIBRARY_OUTPUT_PATH lib)
 
 FIND_PACKAGE(Threads REQUIRED)
+INCLUDE(cmake/fetch_stdtracer.cmake)
 
 ADD_COMPILE_OPTIONS(-fcoroutines)
 

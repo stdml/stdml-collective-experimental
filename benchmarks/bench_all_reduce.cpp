@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+// #include <format>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -9,50 +10,44 @@
 #include <vector>
 
 #include <stdml/collective>
+#include <tracer/simple_log>
 
-void bench_all_reduce(stdml::collective::session &session, const size_t n)
+DEFINE_TRACE_CONTEXTS;
+
+double gigabytes(size_t n)
 {
+    constexpr double gi = 1 << 30;
+    return n / gi;
+}
+
+using C = std::chrono::high_resolution_clock;
+
+std::pair<double, double> bench_all_reduce(stdml::collective::session &session,
+                                           const size_t n)
+{
+    auto t0 = C::now();
     std::vector<float> x(n);
     std::vector<float> y(n);
     std::iota(x.begin(), x.end(), 1);
     session.all_reduce(x.data(), x.data() + x.size(), y.data());
+    auto t1 = C::now();
+    double d = (t1 - t0).count();
+    return {d, gigabytes(n)};
 }
 
-template <typename T>
-void pprint(const std::vector<T> &xs)
+// std::pair<double, double>
+double bench_step(stdml::collective::session &session,
+                  const std::vector<size_t> &sizes)
 {
-    int i = 0;
-    for (const T &x : xs) {
-        if (i++) { std::cout << ", "; }
-        std::cout << x;
+    auto t0 = C::now();
+    for (auto size : sizes) {
+        auto [d, g] = bench_all_reduce(session, size);
+        // std::cout << std::format("{}", g / d) << "GiB/s" << std::endl;
+        // printf("%.3f GiB/s\n", g / d);
     }
-    std::cout << std::endl;
-}
-
-void example_1()
-{
-    auto peer = stdml::collective::peer::from_env();
-    std::cout << "peer created" << std::endl;
-
-    stdml::collective::session session = peer.join();
-    std::cout << "session joined, rank: " << session.rank()
-              << ", size: " << session.size() << std::endl;
-
-    {
-        const int n = 10;
-        std::vector<int> x(n);
-        std::vector<int> y(n);
-        std::fill(x.begin(), x.end(), session.rank());
-        std::fill(y.begin(), y.end(), -10);
-        // std::iota(x.begin(), x.end(), 1);
-
-        // std::cout << std::string(80, '-') << std::endl;
-        session.all_reduce(x.data(), x.data() + x.size(), y.data());
-        // std::cout << std::string(80, '-') << std::endl;
-        pprint(x);
-        pprint(y);
-    }
-    // bench_all_reduce(session);
+    auto t1 = C::now();
+    std::chrono::duration<double> d = (t1 - t0);
+    return d.count();
 }
 
 std::vector<size_t> read_int_list(const char *filename)
@@ -69,16 +64,22 @@ using stdml::collective::PRINT;
 
 int main(int argc, char *argv[])
 {
+    TRACE_SCOPE(__func__);
+
     const auto sizes = read_int_list(argv[1]);
     const int times = std::stoi(argv[2]);
+    const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
+
     log(PRINT) << sizes.size() << "tensors";
-    log(PRINT) << "total size"
-               << std::accumulate(sizes.begin(), sizes.end(), 0);
+    log(PRINT) << "total size" << tot;
+
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
+
     for (int i = 0; i < times; ++i) {
         log(PRINT) << "bench step" << i;
-        for (auto size : sizes) { bench_all_reduce(session, size); }
+        auto d = bench_step(session, sizes);
+        printf("%.3f GiB/s\n", gigabytes(tot * 4) / d);
     }
     return 0;
 }

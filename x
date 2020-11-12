@@ -1,8 +1,20 @@
 #!/bin/sh
 set -e
 
-./configure
-make
+build() {
+    ./configure
+    make
+}
 
-./scripts/run/example-1.sh
-./scripts/bench/1.sh
+run_all() {
+    ./scripts/run/example-1.sh
+    ./scripts/bench/1.sh
+}
+
+main() {
+    build
+    rm -fr logs
+    run_all
+}
+
+main

@@ -4,7 +4,7 @@ set -e
 kungfu_run_flags() {
     local np=$1
     echo -q
-    echo -logdir logs
+    echo -logdir logs/bench
     echo -H "127.0.0.1:$np"
     echo -np $np
 }
