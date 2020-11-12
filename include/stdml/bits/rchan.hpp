@@ -72,5 +72,7 @@ class server
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual ~server() = default;
+
+    static server *New(const peer_id self);
 };
 }  // namespace stdml::collective::rchan
