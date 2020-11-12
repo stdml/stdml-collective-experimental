@@ -121,6 +121,36 @@ connection *connection::dial(const peer_id remote, const rchan::conn_type type,
     return new connection_impl(remote, type, local);
 }
 
+class message_reader_impl : public message_reader
+{
+    using tcp_socket = net::ip::tcp::socket;
+
+    tcp_socket *socket_;
+    uint32_t len_;
+
+  public:
+    message_reader_impl(tcp_socket *socket) : socket_(socket), len_(0) {}
+
+    std::optional<received_header> read_header() override
+    {
+        received_header hdr;
+        auto n = ioutil::read(*socket_, hdr.name_len);
+        if (n == 0) { return {}; }
+        hdr.name.resize(hdr.name_len);
+        ioutil::read(*socket_, hdr.name.data(), hdr.name_len);
+        ioutil::read(*socket_, hdr.flags);
+        ioutil::read(*socket_, hdr.len);
+        len_ = hdr.len;
+        return hdr;
+    }
+
+    bool read_body(void *data) override
+    {
+        ioutil::read(*socket_, data, len_);
+        return true;
+    }
+};
+
 class client_impl : public client
 {
     const peer_id self_;
@@ -164,72 +194,91 @@ client *client_pool::require(conn_type type)
     return client;
 }
 
+class default_msg_handler_impl : public msg_handler
+{
+    using tcp_socket = net::ip::tcp::socket;
+
+  public:
+    bool operator()(const peer_id &src, void *_socket) override
+    {
+        tcp_socket &socket = *(reinterpret_cast<tcp_socket *>(_socket));
+        message_reader_impl reader(&socket);
+        auto mh = reader.read_header();
+        if (!mh.has_value()) { return false; }
+        buffer b = alloc_buffer(mh->len);
+        reader.read_body(b.data.get());
+        return true;
+    }
+};
+
+template <conn_type type>
+class msg_handler_impl;
+
+template <>
+class msg_handler_impl<conn_collective> : public msg_handler
+{
+    using tcp_socket = net::ip::tcp::socket;
+
+    mailbox *mailbox_;
+    slotbox *slotbox_;
+
+  public:
+    msg_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb) {}
+
+    bool operator()(const peer_id &src, void *_socket) override
+    {
+        tcp_socket &socket = *(reinterpret_cast<tcp_socket *>(_socket));
+        message_reader_impl reader(&socket);
+
+        auto mh = reader.read_header();
+        if (!mh.has_value()) { return false; }
+
+        buffer b = alloc_buffer(mh->len);
+        reader.read_body(b.data.get());
+
+        mailbox::Q *q = mailbox_->require(src, mh->name);
+        q->put(std::move(b));
+
+        return true;
+    }
+};
+
 class handler_impl : public handler
 {
     using tcp_socket = net::ip::tcp::socket;
 
     mailbox *mailbox_;
+    slotbox *slotbox_;
+
+    std::map<conn_type, std::unique_ptr<msg_handler>> msg_handlers_;
 
   public:
-    static bool recv_one_msg(tcp_socket &socket, received_message &msg)
+    handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
     {
-        auto n = ioutil::read(socket, msg.name_len);
-        if (n == 0) { return false; }
-        msg.name.reset(new char[msg.name_len]);
-        ioutil::read(socket, msg.name.get(), msg.name_len);
-        ioutil::read(socket, msg.flags);
-        ioutil::read(socket, msg.len);
-        msg.data.reset(new char[msg.len]);
-        ioutil::read(socket, msg.data.get(), msg.len);
-        return true;
+        msg_handlers_[conn_collective].reset(
+            new msg_handler_impl<conn_collective>(mailbox_, slotbox_));
     }
 
-    static void recv_msgs(tcp_socket &socket, int n)
+    size_t operator()(const peer_id src, conn_type type, tcp_socket socket)
     {
-        for (int i = 0; i < n; ++i) {
-            received_message msg;
-            recv_one_msg(socket, msg);
+        default_msg_handler_impl hh;
+        msg_handler *h = &hh;
+        auto &handler = msg_handlers_.at(type);
+        if (handler.get()) { h = handler.get(); }
+        int i = 0;
+        for (;; ++i) {
+            const bool ok = (*h)(src, &socket);
+            if (!ok) { break; }
         }
-    }
-
-  public:
-    handler_impl(mailbox *mb) : mailbox_(mb) {}
-
-    void handle_collective(tcp_socket &socket) {}
-
-    void operator()(const peer_id src, rchan::conn_type type, tcp_socket socket)
-    {
-        for (int i = 0;; ++i) {  //
-            received_message msg;
-            const bool ok = recv_one_msg(socket, msg);
-            if (!ok) {
-                log() << "error after received" << i << "messages";
-                break;
-            }
-            if (type == rchan::conn_collective) {
-                std::string name(msg.name.get(), msg.name_len);
-                // log() << "got msg of type" << type << "from" << src
-                //       << "with name length" << name.size();
-                mailbox::Q *q = mailbox_->require(src, name);
-                // log() << "required queue for put " << src << "@" << name <<
-                // ":"
-                //       << q;
-                buffer b = {
-                    .data = std::move(msg.data),
-                    .len = msg.len,
-                };
-                // log() << "putting msg from" << src;
-                q->put(std::move(b));
-                // log() << "put msg from" << src << "into queue" << q;
-            }
-            // log() << "received" << i << "messages"  ;
-        }
-        // recv_msgs(socket, 1);
         socket.close();
+        return i;
     }
 };
 
-handler *handler::New(mailbox *mb) { return new handler_impl(mb); }
+handler *handler::New(mailbox *mb, slotbox *sb)
+{
+    return new handler_impl(mb, sb);
+}
 
 class server_impl : public server
 {
@@ -278,8 +327,8 @@ class server_impl : public server
         handle_threads_.push_back(std::make_unique<std::thread>(
             [h = handler_, socket = std::move(socket)]() mutable {
                 const auto [src, type] = upgrade(socket);
-                (*h)(src, type, std::move(socket));
-                log() << "handle finished";
+                auto n = (*h)(src, type, std::move(socket));
+                log() << "handle finished after" << n << "messages";
             }));
     }
 

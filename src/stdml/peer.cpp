@@ -36,7 +36,8 @@ peer::peer(const peer_id self, const peer_list init_peers)
     : self_(self),
       init_peers_(init_peers),
       mailbox_(new mailbox),
-      handler_(rchan::handler::New(mailbox_.get())),
+      slotbox_(new slotbox),
+      handler_(rchan::handler::New(mailbox_.get(), slotbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
     start();
@@ -95,7 +96,8 @@ void peer::stop()
 
 session peer::join()
 {
-    session sess(self_, init_peers_, mailbox_.get(), client_pool_.get());
+    session sess(self_, init_peers_, mailbox_.get(), slotbox_.get(),
+                 client_pool_.get());
     return std::move(sess);
 }
 }  // namespace stdml::collective

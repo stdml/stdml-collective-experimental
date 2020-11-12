@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 
 #include <stdml/bits/mailbox.hpp>
@@ -48,12 +49,34 @@ struct received_message {
     std::unique_ptr<char[]> data;
 };
 
+class message_reader
+{
+  protected:
+    struct received_header {
+        uint32_t name_len;
+        std::string name;
+        uint32_t flags;
+        uint32_t len;
+    };
+
+  public:
+    virtual std::optional<received_header> read_header() = 0;
+    virtual bool read_body(void *data) = 0;
+};
+
+class msg_handler
+{
+  public:
+    virtual ~msg_handler() = default;
+    virtual bool operator()(const peer_id &src, void *) = 0;
+};
+
 class handler
 {
   public:
     virtual ~handler() = default;
 
-    static handler *New(mailbox *mb);
+    static handler *New(mailbox *mb, slotbox *sb);
 };
 
 class client

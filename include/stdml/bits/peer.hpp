@@ -17,6 +17,7 @@ class peer
     const peer_list init_peers_;
 
     std::unique_ptr<mailbox> mailbox_;
+    std::unique_ptr<slotbox> slotbox_;
     std::unique_ptr<rchan::handler> handler_;
 
     std::unique_ptr<rchan::client_pool> client_pool_;

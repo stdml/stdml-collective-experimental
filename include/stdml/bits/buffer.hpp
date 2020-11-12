@@ -10,6 +10,14 @@ struct buffer {
     uint32_t len;
 };
 
+inline buffer alloc_buffer(uint32_t n)
+{
+    return buffer{
+        .data = std::unique_ptr<char[]>(new char[n]),
+        .len = n,
+    };
+}
+
 struct workspace {
     const void *send;
     void *recv;
