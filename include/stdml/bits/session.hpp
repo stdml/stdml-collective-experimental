@@ -4,6 +4,7 @@
 
 #include <stdml/bits/address.hpp>
 #include <stdml/bits/dtype.hpp>
+#include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/rchan.hpp>
 #include <stdml/bits/topology.hpp>
 
@@ -27,8 +28,6 @@ class session
 
     graph_pair_list all_reduce_topo_;
 
-    rchan::client_pool *client_pool_;  // owned by peer
-
     void run_graphs(const workspace &w, const std::vector<const graph *> &gs);
     void run_graph_pair_list(const workspace &w, const graph_pair_list &gps);
 
@@ -40,11 +39,15 @@ class session
     void ring_handshake();
 
   public:
-    session(const peer_id self, const peer_list peers,
+    mailbox *mailbox_;                 // owned by peer
+    rchan::client_pool *client_pool_;  // owned by peer
+
+    session(const peer_id self, const peer_list peers, mailbox *mailbox,
             rchan::client_pool *client_pool, const strategy s = star)
         : peers_(peers),
           rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
           all_reduce_topo_(make_graph_pair_list(s, peers.size())),
+          mailbox_(mailbox),
           client_pool_(client_pool)
     {
         printf("rank=%d\n", (int)rank_);

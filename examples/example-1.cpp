@@ -8,7 +8,7 @@
 
 #include <stdml/collective>
 
-int main()
+void example_1()
 {
     auto peer = stdml::collective::peer::from_env();
     std::cout << "peer created" << std::endl;
@@ -26,5 +26,11 @@ int main()
     std::vector<int8_t> y(n);
     std::iota(x.begin(), x.end(), 'a');
     session.all_reduce(x.data(), x.data() + x.size(), y.data());
+}
+
+int main()
+{
+    example_1();
+    std::cout << "example finished" << std::endl;
     return 0;
 }

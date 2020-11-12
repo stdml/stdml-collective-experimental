@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include <stdml/bits/address.hpp>
+#include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/rchan.hpp>
 #include <stdml/bits/session.hpp>
 
@@ -14,6 +15,9 @@ class peer
 {
     const peer_id self_;
     const peer_list init_peers_;
+
+    std::unique_ptr<mailbox> mailbox_;
+    std::unique_ptr<rchan::handler> handler_;
 
     std::unique_ptr<rchan::client_pool> client_pool_;
     std::unique_ptr<rchan::server> server_;
@@ -32,10 +36,6 @@ class peer
     void start();
     void stop();
 
-    session join()
-    {
-        session sess(self_, init_peers_, client_pool_.get());
-        return std::move(sess);
-    }
+    session join();
 };
 }  // namespace stdml::collective

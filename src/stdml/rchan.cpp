@@ -2,6 +2,8 @@
 #include <iostream>
 
 #include <stdml/bits/connection.hpp>
+#include <stdml/bits/log.hpp>
+#include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/peer.hpp>
 #include <stdml/bits/rchan.hpp>
 
@@ -25,11 +27,10 @@ class connection_impl : public connection
             std::error_code ec;
             socket.connect(ep, ec);
             if (!ec) {
-                std::cout << "connected to " << ep << " after " << i
-                          << " retries" << std::endl;
+                log() << "connected to" << ep << "after" << i << "retries";
                 break;
             }
-            std::cout << "conn to " << ep << " failed : " << ec << std::endl;
+            log() << "conn to" << ep << "failed :" << ec;
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(1s);
         }
@@ -59,10 +60,9 @@ class connection_impl : public connection
             .src_port = local.port,
             .src_ipv4 = local.ipv4,
         };
-        std::cout << "connected to " << (std::string)remote << std::endl;
+        log() << "connected to" << (std::string)remote;
         socket_.write_some(net::buffer(&h, sizeof(h)));
-        std::cout << "upgraded to " << (std::string)remote << " @ " << type
-                  << std::endl;
+        log() << "upgraded to" << (std::string)remote << "@" << type;
     }
 
     ~connection_impl() { socket_.close(); }
@@ -110,7 +110,6 @@ class client_impl : public client
         auto it = pool_.find(target.hash());
         if (it != pool_.end()) { return it->second.get(); }
         auto conn = connection::dial(target, type_, self_);  // FIXME: unblock
-        // pool_.insert(target.hash(), std::unique_ptr<connection>(conn));
         pool_[target.hash()].reset(conn);
         return conn;
     }
@@ -131,73 +130,96 @@ class client_impl : public client
 
 client *client_pool::require(conn_type type)
 {
-    std::cout << "require client of type " << type << std::endl;
+    log() << "require client of type" << type;
     std::lock_guard _(mu_);
     if (auto it = client_pool_.find(type); it != client_pool_.end()) {
-        std::cout << "using existing client of type " << type << std::endl;
+        log() << "using existing client of type" << type;
         return it->second.get();
     }
     auto client = new client_impl(self_, type);
-    std::cout << "created new client of type " << type << std::endl;
+    log() << "created new client of type" << type;
     client_pool_[type].reset(client);
     return client;
 }
 
-class handler
+class handler_impl : public handler
 {
     using tcp_socket = net::ip::tcp::socket;
 
+    mailbox *mailbox_;
+
   public:
     template <typename T>
-    static void _recv(tcp_socket &socket, T &t)
+    static auto _recv(tcp_socket &socket, T &t)
     {
-        socket.read_some(net::buffer(&t, sizeof(T)));
+        return socket.read_some(net::buffer(&t, sizeof(T)));
     }
 
-    static void _recv(tcp_socket &socket, void *data, uint32_t size)
+    static auto _recv(tcp_socket &socket, void *data, uint32_t size)
     {
-        socket.read_some(net::buffer(data, size));
+        return socket.read_some(net::buffer(data, size));
     }
 
-    static void recv_one_msg(tcp_socket &socket)
+    static bool recv_one_msg(tcp_socket &socket, received_message &msg)
     {
-        message_header mh;
-        std::string name;
-        std::string body;
-
-        message msg;
-        {
-            _recv(socket, mh.name_len);
-            name = std::string(mh.name_len, '\0');
-            _recv(socket, name.data(), mh.name_len);
-            _recv(socket, mh.flags);
-        }
-        {
-            _recv(socket, msg.len);
-            body = std::string(msg.len, '\0');
-            _recv(socket, body.data(), msg.len);
-        }
-
-        std::cout << "name: " << name << ", body: " << body << std::endl;
+        auto n = _recv(socket, msg.name_len);
+        if (n == 0) { return false; }
+        msg.name.reset(new char[msg.name_len]);
+        _recv(socket, msg.name.get(), msg.name_len);
+        _recv(socket, msg.flags);
+        _recv(socket, msg.len);
+        msg.data.reset(new char[msg.len]);
+        _recv(socket, msg.data.get(), msg.len);
+        return true;
     }
 
     static void recv_msgs(tcp_socket &socket, int n)
     {
-        for (int i = 0; i < n; ++i) { recv_one_msg(socket); }
+        for (int i = 0; i < n; ++i) {
+            received_message msg;
+            recv_one_msg(socket, msg);
+        }
     }
 
   public:
-    handler(conn_type type)
+    handler_impl(mailbox *mb) : mailbox_(mb)
     {
         //
     }
+    void handle_collective(tcp_socket &socket) {}
 
-    void operator()(tcp_socket socket)
+    void operator()(const peer_id src, rchan::conn_type type, tcp_socket socket)
     {
-        recv_msgs(socket, 1);
+        for (int i = 0;; ++i) {  //
+            received_message msg;
+            const bool ok = recv_one_msg(socket, msg);
+            if (!ok) {
+                log() << "error after received" << i << "messages";
+                break;
+            }
+            if (type == rchan::conn_collective) {
+                std::string name(msg.name.get(), msg.name_len);
+                log() << "got msg of type" << type << "from" << src
+                      << "with name length" << name.size();
+                mailbox::Q *q = mailbox_->require(src, name);
+                log() << "required queue for put " << src << "@" << name << ":"
+                      << q;
+                buffer b = {
+                    .data = std::move(msg.data),
+                    .len = msg.len,
+                };
+                log() << "putting msg from" << src;
+                q->put(std::move(b));
+                log() << "put msg from" << src << "into queue" << q;
+            }
+            // log() << "received" << i << "messages"  ;
+        }
+        // recv_msgs(socket, 1);
         socket.close();
     }
 };
+
+handler *handler::New(mailbox *mb) { return new handler_impl(mb); }
 
 class server_impl : public server
 {
@@ -206,11 +228,13 @@ class server_impl : public server
     using tcp_acceptor = net::ip::tcp::acceptor;
 
     const peer_id self_;
+    handler_impl *handler_;
 
     net::io_context ctx_;
     tcp_acceptor acceptor_;
 
     std::unique_ptr<std::thread> thread_;
+    std::vector<std::unique_ptr<std::thread>> handle_threads_;
 
     static void wait_bind(tcp_acceptor &acceptor, const tcp_endpoint &ep)
     {
@@ -218,17 +242,16 @@ class server_impl : public server
             std::error_code ec;
             acceptor.bind(ep, ec);
             if (!ec) {
-                std::cout << "bind success after " << i << " retries"
-                          << std::endl;
+                log() << "bind success after" << i << "retries";
                 break;
             }
-            std::cout << "bind error code: " << ec << std::endl;
+            log() << "bind error code:" << ec;
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(1s);
         }
     }
 
-    conn_header upgrade(tcp_socket &socket)
+    static std::pair<peer_id, rchan::conn_type> upgrade(tcp_socket &socket)
     {
         conn_header h;
         socket.read_some(net::buffer(&h, sizeof(h)));
@@ -236,17 +259,18 @@ class server_impl : public server
             .ipv4 = h.src_ipv4,
             .port = h.src_port,
         };
-        std::cout << "got connection from " << (std::string)src << " of type "
-                  << h.type << std::endl;
-        return h;
+        log() << "got connection of type" << h.type << "from" << src;
+        return std::make_pair(src, h.type);
     }
 
     void handle(tcp_socket socket)
     {
-        const auto chdr = upgrade(socket);
-        handler h(chdr.type);
-        h(std::move(socket));
-        std::cout << "handle finished" << std::endl;
+        handle_threads_.push_back(std::make_unique<std::thread>(
+            [h = handler_, socket = std::move(socket)]() mutable {
+                const auto [src, type] = upgrade(socket);
+                (*h)(src, type, std::move(socket));
+                log() << "handle finished";
+            }));
     }
 
     void _accept_loop()
@@ -269,30 +293,31 @@ class server_impl : public server
         wait_bind(acceptor_, ep);
         acceptor_.listen(5);
 
-        std::cout << "serving " << ep << std::endl;
+        log() << "serving" << ep;
         _accept_loop();
-        std::cout << "entered loop" << std::endl;
+        log() << "entered loop";
         const auto n = ctx_.run();
-        std::cout << "serving finished after " << n << std::endl;
+        log() << "serving finished after" << n;
     }
 
   public:
-    server_impl(const peer_id self)
+    server_impl(const peer_id self, handler_impl *handler)
         : ctx_(std::thread::hardware_concurrency()),
           self_(self),
+          handler_(handler),
           acceptor_(ctx_)
     {
     }
 
     ~server_impl()
     {
-        std::cout << __func__ << std::endl;
+        log() << __func__;
         stop();
     }
 
     void start() override
     {
-        std::cout << "starting server .. " << std::endl;
+        log() << "starting server .. ";
         thread_.reset(new std::thread([this] {  //
             serve(self_);
         }));
@@ -301,19 +326,24 @@ class server_impl : public server
     void stop() override
     {
         if (thread_.get()) {
-            std::cout << "joining .. " << std::endl;
+            log() << "joining .. ";
             acceptor_.cancel();
-            std::cout << "canceled .. " << std::endl;
+            log() << "canceled .. ";
             // acceptor_.close();
-            // std::cout << "closed .. " << std::endl;
+            //  log() << "closed .. "  ;
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(2s);
             ctx_.stop();
             thread_->join();  //
-            std::cout << "joined. " << std::endl;
+            log() << "server thread joined.";
+            for (auto &th : handle_threads_) { th->join(); }
+            log() << "all client threads joined.";
         }
     }
 };
 
-server *server::New(const peer_id self) { return new server_impl(self); }
+server *server::New(const peer_id self, handler *handler)
+{
+    return new server_impl(self, dynamic_cast<handler_impl *>(handler));
+}
 }  // namespace stdml::collective::rchan

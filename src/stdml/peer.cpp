@@ -11,6 +11,8 @@
 #include <vector>
 
 #include <stdml/bits/connection.hpp>
+#include <stdml/bits/log.hpp>
+#include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/peer.hpp>
 #include <stdml/bits/rchan.hpp>
 
@@ -70,6 +72,8 @@ std::optional<peer_list> parse_peer_list(const std::string &s)
 peer::peer(const peer_id self, const peer_list init_peers)
     : self_(self),
       init_peers_(init_peers),
+      mailbox_(new mailbox),
+      handler_(rchan::handler::New(mailbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
     start();
@@ -98,13 +102,20 @@ peer peer::from_env() { return from_kungfu_env(); }
 
 void peer::start()
 {
-    server_.reset(rchan::server::New(self_));
+    server_.reset(rchan::server::New(self_, handler_.get()));
     server_->start();
 }
 
 void peer::stop()
 {
-    std::cout << "stop peer" << std::endl;
+    log() << "stop peer";
+    client_pool_.reset(nullptr);
     server_.reset(nullptr);
+}
+
+session peer::join()
+{
+    session sess(self_, init_peers_, mailbox_.get(), client_pool_.get());
+    return std::move(sess);
 }
 }  // namespace stdml::collective

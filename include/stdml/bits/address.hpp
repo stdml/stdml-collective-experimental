@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,11 @@ struct peer_id {
         return ipv4 == p.ipv4 && port == p.port;
     }
 
+    bool operator<(const peer_id &p) const
+    {
+        return ipv4 < p.ipv4 || (ipv4 == p.ipv4 && port < p.port);
+    }
+
     std::string hostname() const;
 
     operator std::string() const;
@@ -24,6 +30,14 @@ struct peer_id {
                static_cast<uint64_t>(port);
     }
 };
+
+inline std::ostream &operator<<(std::ostream &os, const peer_id &id)
+{
+    using namespace std::string_literals;
+    os << "#<peer:"s << id.hostname() << ":"s << std::to_string(id.port)
+       << ">"s;
+    return os;
+}
 
 class peer_list : public std::vector<peer_id>
 {

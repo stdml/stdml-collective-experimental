@@ -4,6 +4,8 @@
 #include <mutex>
 #include <unordered_map>
 
+#include <stdml/bits/mailbox.hpp>
+
 namespace stdml::collective::rchan
 {
 enum conn_type : uint16_t {
@@ -38,11 +40,21 @@ struct message {
     //     flags;  // copied from Header, shouldn't be used during Read or Write
 };
 
-// class handler
-// {
-//   public:
-//     virtual void handle() = 0;
-// };
+struct received_message {
+    uint32_t name_len;
+    std::unique_ptr<char[]> name;
+    uint32_t flags;
+    uint32_t len;
+    std::unique_ptr<char[]> data;
+};
+
+class handler
+{
+  public:
+    virtual ~handler() = default;
+
+    static handler *New(mailbox *mb);
+};
 
 class client
 {
@@ -73,6 +85,6 @@ class server
     virtual void stop() = 0;
     virtual ~server() = default;
 
-    static server *New(const peer_id self);
+    static server *New(const peer_id self, handler *handler);
 };
 }  // namespace stdml::collective::rchan

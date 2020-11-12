@@ -1,34 +1,42 @@
 #include <iostream>
 
 #include <stdml/bits/connection.hpp>
+#include <stdml/bits/log.hpp>
 #include <stdml/bits/session.hpp>
 #include <stdml/bits/topology.hpp>
 
 namespace stdml::collective
 {
 struct recv {
+    const session *sess;
     const workspace *w;
     const bool reduce;
     rchan::client *client;
 
-    recv(const workspace *w, rchan::client *client, bool reduce)
-        : w(w), reduce(reduce), client(client)
+    recv(const session *sess, const workspace *w, bool reduce)
+        : sess(sess), w(w), reduce(reduce)
     {
     }
 
     void operator()(const peer_id &id)
     {
-        // client->send(id, w->name, w->send, 1);  //
+        mailbox::Q *q = sess->mailbox_->require(id, w->name);
+        log() << "required queue for recv " << id << "@" << w->name << ":" << q;
+        log() << "expect msg from" << id << "with name length" << w->name.size()
+              << "in queue" << q;
+        q->get();
+        log() << "arrived msg from" << id;
     }
 };
 
 struct send {
+    const session *sess;
     const workspace *w;
     const bool reduce;
     rchan::client *client;
 
-    send(const workspace *w, rchan::client *client, bool reduce)
-        : w(w), reduce(reduce), client(client)
+    send(const session *sess, const workspace *w, bool reduce)
+        : sess(sess), w(w), reduce(reduce)
     {
     }
 
@@ -36,7 +44,8 @@ struct send {
     {
         uint32_t flags = 0;
         if (reduce) { flags |= rchan::message_header::wait_recv_buf; };
-        client->send(id, w->name.c_str(), w->send, w->data_size(), flags);  //
+        auto client = sess->client_pool_->require(rchan::conn_collective);
+        client->send(id, w->name.c_str(), w->send, w->data_size(), flags);
     }
 };
 
@@ -55,16 +64,16 @@ void seq(F f, const peer_list &ps)
 void session::run_graphs(const workspace &w,
                          const std::vector<const graph *> &gs)
 {
-    auto client = client_pool_->require(rchan::conn_collective);
+    // auto client = client_pool_->require(rchan::conn_collective);
     for (const auto g : gs) {
         const auto prevs = peers_[g->prevs(rank_)];
         const auto nexts = peers_[g->nexts(rank_)];
         if (g->self_loop(rank_)) {
-            par(recv(&w, client, true), prevs);
-            par(send(&w, client, true), nexts);
+            par(recv(this, &w, true), prevs);
+            par(send(this, &w, true), nexts);
         } else {
-            seq(recv(&w, client, false), prevs);
-            par(send(&w, client, false), nexts);
+            seq(recv(this, &w, false), prevs);
+            par(send(this, &w, false), nexts);
         }
     }
 }
@@ -95,7 +104,7 @@ void session::ring_handshake()
 {
     const size_t next_rank = (rank_ + 1) % peers_.size();
     const auto next = peers_[next_rank];
-    std::cout << "next: " << (std::string)next << std::endl;
+    log() << "next:" << next;
     auto client = client_pool_->require(rchan::conn_ping);
     using namespace std::string_literals;
     const auto msg = "hello world"s;
