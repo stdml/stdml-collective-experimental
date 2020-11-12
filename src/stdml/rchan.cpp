@@ -235,13 +235,14 @@ class msg_handler_impl<conn_collective> : public msg_handler
         auto mh = reader.read_header();
         if (!mh.has_value()) { return false; }
 
-        buffer b = alloc_buffer(mh->len);
-        reader.read_body(b.data.get());
-
         if (mh->flags & rchan::message_header::wait_recv_buf) {
-            mailbox::Q *q = mailbox_->require(src, mh->name);
-            q->put(std::move(b));
+            slotbox::S *s = slotbox_->require(src, mh->name);
+            void *ptr = s->waitQ.get();
+            reader.read_body(ptr);
+            s->recvQ.put(ptr);
         } else {
+            buffer b = alloc_buffer(mh->len);
+            reader.read_body(b.data.get());
             mailbox::Q *q = mailbox_->require(src, mh->name);
             q->put(std::move(b));
         }

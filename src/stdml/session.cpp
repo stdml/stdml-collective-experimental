@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstring>
 #include <iostream>
 
@@ -63,9 +64,10 @@ struct recv {
             auto b = q->get();
             state->add_to(b.data.get());
         } else {
-            mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
-            auto b = q->get();
-            state->replace(b.data.get());
+            slotbox::S *s = sess->slotbox_->require(id, (*state)->name);
+            s->waitQ.put((*state)->recv);
+            void *ptr = s->recvQ.get();
+            assert(ptr == (*state)->recv);
         }
     }
 };
@@ -84,7 +86,7 @@ struct send {
     void operator()(const peer_id &id)
     {
         uint32_t flags = 0;
-        if (reduce) { flags |= rchan::message_header::wait_recv_buf; };
+        if (!reduce) { flags |= rchan::message_header::wait_recv_buf; };
         auto client = sess->client_pool_->require(rchan::conn_collective);
         client->send(id, (*state)->name.c_str(), state->effective_data(),
                      (*state)->data_size(), flags);

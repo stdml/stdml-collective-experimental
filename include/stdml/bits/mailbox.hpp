@@ -35,8 +35,8 @@ class mailbox
 class slotbox
 {
     struct slot_pair {
-        channel<buffer> waitQ;
-        channel<buffer> recvQ;
+        channel<void *> waitQ;
+        channel<void *> recvQ;
     };
 
     using key = std::pair<peer_id, std::string>;
