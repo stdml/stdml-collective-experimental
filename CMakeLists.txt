@@ -18,3 +18,4 @@ TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
 
 INCLUDE(cmake/examples.cmake)
 INCLUDE(cmake/tests.cmake)
+INCLUDE(cmake/benchmarks.cmake)
