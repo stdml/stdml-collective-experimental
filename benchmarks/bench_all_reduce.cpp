@@ -12,6 +12,8 @@
 #include <stdml/collective>
 #include <tracer/simple_log>
 
+#include "common.hpp"
+
 DEFINE_TRACE_CONTEXTS;
 
 double gigabytes(size_t n)
@@ -23,31 +25,35 @@ double gigabytes(size_t n)
 using C = std::chrono::high_resolution_clock;
 
 std::pair<double, double> bench_all_reduce(stdml::collective::session &session,
-                                           const size_t n)
+                                           std::vector<float> &x,
+                                           std::vector<float> &y)
 {
     auto t0 = C::now();
-    std::vector<float> x(n);
-    std::vector<float> y(n);
-    std::iota(x.begin(), x.end(), 1);
     session.all_reduce(x.data(), x.data() + x.size(), y.data());
     auto t1 = C::now();
     double d = (t1 - t0).count();
-    return {d, gigabytes(n)};
+    return {d, gigabytes(x.size())};
 }
 
-// std::pair<double, double>
 double bench_step(stdml::collective::session &session,
                   const std::vector<size_t> &sizes)
 {
-    auto t0 = C::now();
-    for (auto size : sizes) {
-        auto [d, g] = bench_all_reduce(session, size);
-        // std::cout << std::format("{}", g / d) << "GiB/s" << std::endl;
-        // printf("%.3f GiB/s\n", g / d);
+    std::vector<fake_cpu_buffer_t<float>> buffers;
+    for (size_t i = 0; i < sizes.size(); ++i) {
+        const std::string name = "variable:" + std::to_string(i++);
+        buffers.emplace_back(name, sizes[i]);
     }
-    auto t1 = C::now();
-    std::chrono::duration<double> d = (t1 - t0);
-    return d.count();
+    {
+        auto t0 = C::now();
+        for (auto &b : buffers) {
+            auto [d, g] = bench_all_reduce(session, b.send_buf, b.recv_buf);
+            // std::cout << std::format("{}", g / d) << "GiB/s" << std::endl;
+            // printf("%.3f GiB/s\n", g / d);
+        }
+        auto t1 = C::now();
+        std::chrono::duration<double> d = (t1 - t0);
+        return d.count();
+    }
 }
 
 std::vector<size_t> read_int_list(const char *filename)

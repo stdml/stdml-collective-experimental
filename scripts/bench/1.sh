@@ -17,8 +17,10 @@ kungfu_run() {
 }
 
 main() {
-    kungfu_run 4 ./bin/bench-all-reduce testdata/small.txt 1
+    kungfu_run 4 ./bin/bench-all-reduce testdata/small.txt 10
     kungfu_run 4 ./bin/bench-all-reduce testdata/resnet50.txt 10
+    # kungfu_run 4 ./bin/bench-all-reduce testdata/vgg16.txt 10
+    # kungfu_run 4 ./bin/bench-all-reduce testdata/bert.txt 10
 }
 
 main

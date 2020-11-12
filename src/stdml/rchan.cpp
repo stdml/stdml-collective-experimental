@@ -361,7 +361,6 @@ class server_impl : public server
 
         log() << "serving" << ep;
         _accept_loop();
-        log() << "entered loop";
         const auto n = ctx_.run();
         log() << "serving finished after" << n;
     }
@@ -392,9 +391,9 @@ class server_impl : public server
     void stop() override
     {
         if (thread_.get()) {
-            log() << "joining .. ";
+            log() << "joining ..";
             acceptor_.cancel();
-            log() << "canceled .. ";
+            log() << "canceled ..";
             ctx_.stop();
             thread_->join();  //
             log() << "serving thread joined.";
