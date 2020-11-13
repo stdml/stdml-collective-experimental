@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cstring>
+#include <functional>
 #include <iostream>
+#include <thread>
 
 #include <stdml/bits/connection.hpp>
 #include <stdml/bits/log.hpp>
@@ -57,7 +59,7 @@ struct recv {
     {
     }
 
-    void operator()(const peer_id &id)
+    void operator()(const peer_id &id) const
     {
         if (reduce) {
             mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
@@ -83,7 +85,7 @@ struct send {
     {
     }
 
-    void operator()(const peer_id &id)
+    void operator()(const peer_id &id) const
     {
         uint32_t flags = 0;
         if (!reduce) { flags |= rchan::message_header::wait_recv_buf; };
@@ -94,13 +96,17 @@ struct send {
 };
 
 template <typename F, typename L>
-void par(F f, const L &xs)
+void par(const F &f, const L &xs)
 {
-    for (const auto x : xs) { f(x); }
+    std::vector<std::thread> ths;
+    for (const auto x : xs) {
+        ths.push_back(std::thread([&, x = x] { f(x); }));
+    }
+    for (auto &th : ths) { th.join(); }
 }
 
 template <typename F, typename L>
-void seq(F f, const L &xs)
+void seq(const F &f, const L &xs)
 {
     for (const auto x : xs) { f(x); }
 }

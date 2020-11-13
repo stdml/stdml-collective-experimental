@@ -9,7 +9,9 @@
 #include <thread>
 #include <vector>
 
+#include <stdml/bits/stat.hpp>
 #include <stdml/collective>
+
 #include <tracer/simple_log>
 
 #include "common.hpp"
@@ -101,5 +103,7 @@ int main(int argc, char *argv[])
         auto d = bench_step(session, buffers);
         printf("%.3f GiB/s\n", gigabytes(multiplier * tot * 4) / d);
     }
+
+    stdml::collective::rchan::report_stat();
     return 0;
 }
