@@ -7,7 +7,7 @@ namespace stdml::collective::rchan
 {
 stat _global_stat;
 
-stat::stat() : enabled_(true) {}
+stat::stat() : enabled_(true) { events_.reserve(1 << 20); }
 stat::~stat() {}
 
 void stat::enable() { enabled_ = true; }

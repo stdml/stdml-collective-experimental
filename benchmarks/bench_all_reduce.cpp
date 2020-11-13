@@ -35,6 +35,12 @@ void pprint(const std::vector<T> &xs)
     std::cout << std::endl;
 }
 
+template <typename T>
+T mean(const std::vector<T> &xs)
+{
+    return std::accumulate(xs.begin(), xs.end(), static_cast<T>(0)) / xs.size();
+}
+
 using C = std::chrono::high_resolution_clock;
 
 void bench_all_reduce_one(stdml::collective::session &session,
@@ -66,6 +72,7 @@ std::vector<size_t> read_int_list(const char *filename)
 {
     std::vector<size_t> sizes;
     std::ifstream fs(filename);
+    if (!fs.is_open()) { throw std::runtime_error("file not found"); }
     size_t size;
     while (fs >> size) { sizes.push_back(size); }
     return sizes;
@@ -79,7 +86,8 @@ void bench(const std::vector<size_t> &sizes, int times)
     pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
     log(PRINT) << sizes.size() << "tensors";
-    log(PRINT) << "total size" << tot;
+    log(PRINT) << "total size" << tot * 4 <<  //
+        "(" << gigabytes(tot * 4) << " GiB)";
 
     stdml::collective::rchan::stat_disable();
 
@@ -97,28 +105,50 @@ void bench(const std::vector<size_t> &sizes, int times)
         buffers.emplace_back(name, sizes[i]);
     }
 
+    std::vector<double> metrics;
     for (int i = 0; i < times; ++i) {
         log(PRINT) << "bench step" << i;
         auto d = bench_step(session, buffers);
-        printf("%.3f GiB/s\n", gigabytes(multiplier * tot * 4) / d);
+        double metric = gigabytes(multiplier * tot * 4) / d;
+        metrics.push_back(metric);
+        printf("%.3f GiB/s\n", metric);
     }
 
     stdml::collective::rchan::stat_report();
+    printf("FINAL RESULT: %.3f GiB/s\n", mean(metrics));
+}
+
+struct options {
+    std::vector<size_t> sizes;
+    int times;
+};
+
+options parse_args(int argc, char *argv[])
+{
+    std::vector<size_t> sizes;
+    const char *workload = argv[1];
+    int x, n;
+    if (sscanf(workload, "%dx%d", &x, &n) == 2) {
+        sizes.resize(n);
+        std::fill(sizes.begin(), sizes.end(), x);
+    } else {
+        sizes = read_int_list(workload);
+    }
+
+    const int times = std::stoi(argv[2]);
+
+    if (argc > 3) {
+        const size_t tot = std::accumulate(sizes.begin(), sizes.end(), 0);
+        sizes = {tot};
+    }
+
+    return {sizes, times};
 }
 
 int main(int argc, char *argv[])
 {
     TRACE_SCOPE(__func__);
-
-    const auto sizes = read_int_list(argv[1]);
-    const int times = std::stoi(argv[2]);
-    bool fuse = false;
-    if (argc > 3) { fuse = true; }
-    if (fuse) {
-        const size_t tot = std::accumulate(sizes.begin(), sizes.end(), 0);
-        bench({tot}, times);
-    } else {
-        bench(sizes, times);
-    }
+    auto options = parse_args(argc, argv);
+    bench(options.sizes, options.times);
     return 0;
 }

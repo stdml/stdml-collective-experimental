@@ -19,15 +19,15 @@ join() {
 }
 
 style() {
-    echo 'send_0 red'
-    echo 'send_1 green'
-    echo 'send_2 blue'
-    echo 'send_3 yellow'
+    echo 'send_0 #ffff00'
+    echo 'send_1 #ff0000'
+    echo 'send_2 #00ff00'
+    echo 'send_3 #0000ff'
 
-    echo 'read_body_0 grey'
-    echo 'read_body_1 grey'
-    echo 'read_body_2 grey'
-    echo 'read_body_3 grey'
+    echo 'read_body_0 #3f3f00'
+    echo 'read_body_1 #3f0000'
+    echo 'read_body_2 #003f00'
+    echo 'read_body_3 #00003f'
 }
 
 vis() {
@@ -48,7 +48,11 @@ vis() {
 }
 
 main() {
-    vis resnet50 logs/bench/resnet50 $((214 * 2)) $((214 * 12))
+    # vis resnet50 logs/bench/resnet50 $((214 * 2)) $((214 * 12))
+    vis 1024x100 logs/bench/1024x100 $((10 * 2)) $((10 * 12))
+    vis 102400x100 logs/bench/102400x100 $((10 * 2)) $((10 * 12))
+    vis 1024000x100 logs/bench/1024000x100 $((10 * 2)) $((10 * 12))
+    vis 10240000x10 logs/bench/10240000x10 $((10 * 2)) $((10 * 12))
     # vis resnet50-fuse logs/bench/resnet50-fuse 2 12
 }
 
