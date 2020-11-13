@@ -134,7 +134,7 @@ void session::run_graph_pair_list(const workspace &w,
 }
 
 void session::all_reduce(const void *input, void *output, size_t count,
-                         dtype dt, reduce_op op)
+                         dtype dt, reduce_op op, const std::string &name)
 {
     workspace w = {
         .send = input,
@@ -142,7 +142,7 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .count = count,
         .dt = dt,
         .op = op,
-        .name = "",
+        .name = name,
     };
     run_graph_pair_list(w, all_reduce_topo_);
 }

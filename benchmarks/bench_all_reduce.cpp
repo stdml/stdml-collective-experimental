@@ -36,11 +36,12 @@ void pprint(const std::vector<T> &xs)
 using C = std::chrono::high_resolution_clock;
 
 void bench_all_reduce_one(stdml::collective::session &session,
-                          std::vector<float> &x, std::vector<float> &y)
+                          const std::string &name, std::vector<float> &x,
+                          std::vector<float> &y)
 {
     // TRACE_SCOPE(__func__);
     auto t0 = C::now();
-    session.all_reduce(x.data(), x.data() + x.size(), y.data());
+    session.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
     auto t1 = C::now();
     double d = (t1 - t0).count();
 }
@@ -52,7 +53,7 @@ double bench_step(stdml::collective::session &session,
     auto t0 = C::now();
     for (auto &b : buffers) {
         // auto [d, g] =
-        bench_all_reduce_one(session, b.send_buf, b.recv_buf);
+        bench_all_reduce_one(session, b.name, b.send_buf, b.recv_buf);
     }
     auto t1 = C::now();
     std::chrono::duration<double> d = (t1 - t0);
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
     std::vector<fake_cpu_buffer_t<float>> buffers;
     for (size_t i = 0; i < sizes.size(); ++i) {
         const std::string name = "variable:" + std::to_string(i);
-        log(PRINT) << name << sizes[i];
+        // log(PRINT) << name << sizes[i];
         buffers.emplace_back(name, sizes[i]);
     }
 

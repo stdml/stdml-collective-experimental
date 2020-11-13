@@ -22,7 +22,7 @@ class session
     void run_graph_pair_list(const workspace &w, const graph_pair_list &gps);
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
-                    reduce_op op);
+                    reduce_op op, const std::string &name = "");
     void broadcast(const void *input, void *output, size_t count, dtype dt);
 
     void barrier();
@@ -54,17 +54,39 @@ class session
 
     template <typename R>
     void all_reduce(const R *begin1, R *begin2, const size_t count,
-                    reduce_op op = sum)
+                    const std::string &name = "")
     {
-        all_reduce(begin1, begin2, count, type<R>(), op);
+        all_reduce(begin1, begin2, count, type<R>(), sum, name);
+    }
+
+    template <typename R>
+    void all_reduce(const R *begin1, R *begin2, const size_t count,
+                    reduce_op op, const std::string &name = "")
+    {
+        all_reduce(begin1, begin2, count, type<R>(), op, name);
+    }
+
+    template <typename R>
+    void all_reduce(const R *begin1, const R *end1, R *begin2)
+    {
+        const size_t count = std::distance(begin1, end1);
+        all_reduce(begin1, begin2, count, type<R>(), sum, "");
     }
 
     template <typename R>
     void all_reduce(const R *begin1, const R *end1, R *begin2,
-                    reduce_op op = sum)
+                    const std::string &name)
     {
         const size_t count = std::distance(begin1, end1);
-        all_reduce(begin1, begin2, count, type<R>(), op);
+        all_reduce(begin1, begin2, count, type<R>(), sum, name);
+    }
+
+    template <typename R>
+    void all_reduce(const R *begin1, const R *end1, R *begin2, reduce_op op,
+                    const std::string &name = "")
+    {
+        const size_t count = std::distance(begin1, end1);
+        all_reduce(begin1, begin2, count, type<R>(), op, name);
     }
 
     template <typename R>
