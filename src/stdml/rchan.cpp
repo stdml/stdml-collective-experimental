@@ -158,6 +158,7 @@ class message_reader_impl : public message_reader
 
     bool read_body(void *data) override
     {
+        STDML_PROFILE_RATE(__func__, len_);
         ioutil::read(*socket_, data, len_);
         return true;
     }

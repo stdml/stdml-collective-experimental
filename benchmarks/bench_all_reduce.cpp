@@ -74,21 +74,20 @@ std::vector<size_t> read_int_list(const char *filename)
 using stdml::collective::log;
 using stdml::collective::PRINT;
 
-int main(int argc, char *argv[])
+void bench(const std::vector<size_t> &sizes, int times)
 {
-    TRACE_SCOPE(__func__);
-
-    const auto sizes = read_int_list(argv[1]);
-    const int times = std::stoi(argv[2]);
-    const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
-
     pprint(sizes);
-
+    const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
     log(PRINT) << sizes.size() << "tensors";
     log(PRINT) << "total size" << tot;
 
+    stdml::collective::rchan::stat_disable();
+
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
+
+    stdml::collective::rchan::stat_enable();
+
     size_t multiplier = 4 * (session.size() - 1);
 
     std::vector<fake_cpu_buffer_t<float>> buffers;
@@ -104,6 +103,22 @@ int main(int argc, char *argv[])
         printf("%.3f GiB/s\n", gigabytes(multiplier * tot * 4) / d);
     }
 
-    stdml::collective::rchan::report_stat();
+    stdml::collective::rchan::stat_report();
+}
+
+int main(int argc, char *argv[])
+{
+    TRACE_SCOPE(__func__);
+
+    const auto sizes = read_int_list(argv[1]);
+    const int times = std::stoi(argv[2]);
+    bool fuse = false;
+    if (argc > 3) { fuse = true; }
+    if (fuse) {
+        const size_t tot = std::accumulate(sizes.begin(), sizes.end(), 0);
+        bench({tot}, times);
+    } else {
+        bench(sizes, times);
+    }
     return 0;
 }

@@ -7,8 +7,12 @@ namespace stdml::collective::rchan
 {
 stat _global_stat;
 
-stat::stat() {}
+stat::stat() : enabled_(true) {}
 stat::~stat() {}
+
+void stat::enable() { enabled_ = true; }
+
+void stat::disable() { enabled_ = false; }
 
 void stat::report()
 {
@@ -29,8 +33,10 @@ void stat::report()
 
 void stat::record(std::string name, instant t0, instant t1, size_t payload)
 {
-    std::lock_guard<std::mutex> _(mu_);
-    events_.emplace_back(std::move(name), t0, t1, payload);
+    if (enabled_) {
+        std::lock_guard<std::mutex> _(mu_);
+        events_.emplace_back(std::move(name), t0, t1, payload);
+    }
 }
 
 scope::scope(std::string name, stat &s, size_t payload)
@@ -44,5 +50,7 @@ scope::~scope()
     s_.record(std::move(name_), t0_, t1, payload_);
 }
 
-void report_stat() { _global_stat.report(); }
+void stat_report() { _global_stat.report(); }
+void stat_enable() { _global_stat.enable(); }
+void stat_disable() { _global_stat.disable(); }
 }  // namespace stdml::collective::rchan

@@ -1,4 +1,4 @@
-# docker build --rm -t stdml-collective-experimental:snapshot .
+#!/usr/bin/env -S sh -c 'docker build --rm -t stdml-collective-experimental:snapshot .'
 FROM ubuntu:focal
 
 RUN apt update
@@ -16,4 +16,4 @@ ADD . .
 
 RUN ./configure
 RUN make
-RUN ./x
+RUN ./scripts/run/example-1.sh

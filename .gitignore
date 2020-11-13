@@ -3,3 +3,6 @@ Makefile
 Testing
 _deps
 lib
+*.events
+*.png
+style.txt

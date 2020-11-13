@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <chrono>
 #include <mutex>
 #include <string>
@@ -26,6 +27,7 @@ class stat
         size_t payload;
     };
 
+    std::atomic<bool> enabled_;
     std::mutex mu_;
     summary summary_;
     std::vector<event> events_;
@@ -33,6 +35,9 @@ class stat
   public:
     stat();
     ~stat();
+
+    void enable();
+    void disable();
 
     void record(std::string name, instant t0, instant t1, size_t payload);
 
@@ -57,7 +62,9 @@ class scope
 
 extern stat _global_stat;
 
-void report_stat();
+void stat_report();
+void stat_enable();
+void stat_disable();
 }  // namespace stdml::collective::rchan
 
 #define STDML_PROFILE_RATE(name, payload)                                      \
