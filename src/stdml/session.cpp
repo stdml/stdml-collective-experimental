@@ -2,11 +2,13 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <numeric>
 #include <thread>
 
 #include <stdml/bits/connection.hpp>
 #include <stdml/bits/log.hpp>
 #include <stdml/bits/session.hpp>
+#include <stdml/bits/stat.hpp>
 #include <stdml/bits/topology.hpp>
 
 namespace stdml::collective
@@ -131,12 +133,36 @@ void session::run_graphs(const workspace &w,
     }
 }
 
-void session::run_graph_pair_list(const workspace &w,
-                                  const graph_pair_list &gps)
+size_t name_based_hash(size_t i, const std::string &name)
 {
-    // TODO: partition workspace evenly and run them on the graph pair list
-    const auto &p0 = gps.pairs[0];
-    run_graphs(w, {&p0.reduce_graph, &p0.broadcast_graph});
+    size_t h = 0;
+    for (const auto &c : name) { h += c * c; }
+    return h;
+}
+
+template <typename T>
+T ceil_div(T a, T b)
+{
+    return (a / b) + (a % b ? 1 : 0);
+}
+
+size_t session::run_graph_pair_list(const workspace &w,
+                                    const graph_pair_list &gps,
+                                    size_t chunk_size)
+{
+    const size_t k = ceil_div(w.data_size(), chunk_size);
+    const auto ws = w.split(k);
+
+    const auto f = [&](int i) {
+        const size_t j = name_based_hash(i, ws[i].name);
+        const auto &[g0, g1] = gps.choose(j);
+        run_graphs(ws[i], {g0, g1});
+    };
+
+    std::vector<int> seq(k);
+    std::iota(seq.begin(), seq.end(), 0);
+    par(f, seq);
+    return k;
 }
 
 void session::all_reduce(const void *input, void *output, size_t count,

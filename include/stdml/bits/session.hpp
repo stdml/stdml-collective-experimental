@@ -19,7 +19,8 @@ class session
     graph_pair_list all_reduce_topo_;
 
     void run_graphs(const workspace &w, const std::vector<const graph *> &gs);
-    void run_graph_pair_list(const workspace &w, const graph_pair_list &gps);
+    size_t run_graph_pair_list(const workspace &w, const graph_pair_list &gps,
+                               size_t chunk_size = 1 << 20);
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
                     reduce_op op, const std::string &name = "");

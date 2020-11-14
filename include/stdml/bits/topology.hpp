@@ -60,6 +60,12 @@ struct graph_pair {
 
 struct graph_pair_list {
     std::vector<graph_pair> pairs;
+
+    std::pair<const graph *, const graph *> choose(size_t i) const
+    {
+        const graph_pair &p = pairs[i % pairs.size()];
+        return {&p.reduce_graph, &p.broadcast_graph};
+    }
 };
 
 enum strategy {

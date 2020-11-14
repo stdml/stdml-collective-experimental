@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <vector>
 
 #include <stdml/bits/dtype.hpp>
 
@@ -18,6 +19,37 @@ inline buffer alloc_buffer(uint32_t n)
     };
 }
 
+template <typename T>
+std::pair<T, T> divide(T a, T b)
+{
+    T q = a / b;
+    T r = a - b * q;
+    return {q, r};
+}
+
+template <typename T>
+struct interval {
+    T begin;
+    T end;
+
+    T len() const { return end - begin; }
+};
+
+template <typename T>
+std::vector<interval<T>> even_partition(const interval<T> &i, T k)
+{
+    const auto [q, r] = divide(i.len(), k);
+    std::vector<interval<T>> ps;
+    ps.reserve(k);
+    T off = i.begin;
+    for (T j = 0; j < k; ++j) {
+        const T size = j < r ? q + 1 : q;
+        ps.emplace_back(off, off + size);
+        off += size;
+    }
+    return ps;
+}
+
 struct workspace {
     const void *send;
     void *recv;
@@ -27,5 +59,30 @@ struct workspace {
     std::string name;
 
     size_t data_size() const { return count * dtype_size(dt); }
+
+    workspace slice(size_t i, size_t j) const
+    {
+        const size_t s = dtype_size(dt);
+        return {
+            send : (char *)send + i * s,
+            recv : (char *)recv + i * s,
+            count : j - i,
+            dt : dt,
+            op : op,
+            name : "part::" + name + "[" + std::to_string(i) + ":" +
+                std::to_string(j) + "]",
+        };
+    }
+
+    std::vector<workspace> split(size_t k) const
+    {
+        std::vector<workspace> ws;
+        ws.reserve(k);
+        const interval<size_t> all = {0, count};
+        for (const auto &i : even_partition(all, k)) {
+            ws.push_back(slice(i.begin, i.end));
+        }
+        return ws;
+    }
 };
 }  // namespace stdml::collective

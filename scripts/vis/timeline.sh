@@ -19,6 +19,8 @@ join() {
 }
 
 style() {
+    ./scripts/vis/style.rb
+
     echo 'send_0 #ffff00'
     echo 'send_1 #ff0000'
     echo 'send_2 #00ff00'
@@ -28,6 +30,20 @@ style() {
     echo 'read_body_1 #3f0000'
     echo 'read_body_2 #003f00'
     echo 'read_body_3 #00003f'
+
+    echo 'run_graphs0_0 #f50cc2'
+    echo 'recv_onto_0 #ff0000'
+    echo 'send_onto_0 #f50cc2'
+
+    echo 'run_graphs1_0 #007bce'
+
+    echo 'read_body_0 #ff0000'
+    echo 'q->get()_0 #3f3fff'
+    # echo 'add_to_0 #ff0000'
+    echo 'in_add_to_0 #5f0010'
+
+    # echo 'recv_onto_0 red'
+    # echo 'recv_onto_0 red'
 }
 
 vis() {
