@@ -15,7 +15,8 @@ mpi_run() {
 
 main() {
     local np=4
-    mpi_run $np ./bin/example-1
+    # mpi_run $np ./bin/example-1
+    mpi_run $np ./bin/example-mpi
 }
 
 main

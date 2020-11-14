@@ -6,16 +6,18 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(LIBRARY_OUTPUT_PATH lib)
 
 FIND_PACKAGE(Threads REQUIRED)
+INCLUDE(cmake/common.cmake)
 INCLUDE(cmake/fetch_stdtracer.cmake)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 
-ADD_COMPILE_OPTIONS(-fcoroutines)
-
-FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
-ADD_LIBRARY(stdml-collective ${SRCS})
-TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
-TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
+SET(BUILD_LIB ON)
+IF(BUILD_LIB)
+    FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
+    ADD_LIBRARY(stdml-collective ${SRCS})
+    TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
+    TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
+ENDIF()
 
 INCLUDE(cmake/examples.cmake)
 INCLUDE(cmake/tests.cmake)

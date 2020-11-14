@@ -1,2 +1,1 @@
-ADD_EXECUTABLE(bench-all-reduce benchmarks/bench_all_reduce.cpp)
-TARGET_LINK_LIBRARIES(bench-all-reduce stdml-collective)
+ADD_CXX_BINARY(benchmarks/bench_all_reduce.cpp)

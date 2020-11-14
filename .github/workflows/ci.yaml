@@ -30,7 +30,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    # - run: sudo apt install -y openmpi-bin
+    - run: sudo apt install -y openmpi-bin
 
     - run: ./configure
     - run: make
