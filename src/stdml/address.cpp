@@ -1,5 +1,6 @@
 #include <array>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #include <string>
 
@@ -91,7 +92,7 @@ std::ostream &operator<<(std::ostream &os, const peer_list &ps)
 peer_list peer_list::gen(size_t n)
 {
     peer_list ps;
-    for (size_t i = 0; i < n; ++i) {
+    for (auto i : std::views::iota((size_t)0, n)) {
         const auto id = parse_peer_id("127.0.0.1:" + std::to_string(i + 10000));
         ps.push_back(id.value());
     }
