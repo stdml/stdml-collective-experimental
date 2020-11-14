@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include <numeric>
+#include <ranges>
 #include <thread>
 
 #include <stdml/bits/connection.hpp>
@@ -152,16 +153,12 @@ size_t session::run_graph_pair_list(const workspace &w,
 {
     const size_t k = ceil_div(w.data_size(), chunk_size);
     const auto ws = w.split(k);
-
-    const auto f = [&](int i) {
+    const auto f = [&](size_t i) {
         const size_t j = name_based_hash(i, ws[i].name);
         const auto &[g0, g1] = gps.choose(j);
         run_graphs(ws[i], {g0, g1});
     };
-
-    std::vector<int> seq(k);
-    std::iota(seq.begin(), seq.end(), 0);
-    par(f, seq);
+    par(f, std::views::iota((size_t)0, ws.size()));
     return k;
 }
 

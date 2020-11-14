@@ -99,14 +99,14 @@ void bench(const std::vector<size_t> &sizes, int times)
     size_t multiplier = 4 * (session.size() - 1);
 
     std::vector<fake_cpu_buffer_t<float>> buffers;
-    for (size_t i = 0; i < sizes.size(); ++i) {
+    for (auto i : std::views::iota((size_t)0, sizes.size())) {
         const std::string name = "variable:" + std::to_string(i);
         // log(PRINT) << name << sizes[i];
         buffers.emplace_back(name, sizes[i]);
     }
 
     std::vector<double> metrics;
-    for (int i = 0; i < times; ++i) {
+    for (auto i : std::views::iota(0, times)) {
         log(PRINT) << "bench step" << i;
         auto d = bench_step(session, buffers);
         double metric = gigabytes(multiplier * tot * 4) / d;

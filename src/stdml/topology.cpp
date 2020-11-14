@@ -1,4 +1,5 @@
 #include <numeric>
+#include <ranges>
 
 #include <stdml/bits/topology.hpp>
 
@@ -6,9 +7,9 @@ namespace stdml::collective
 {
 std::ostream &operator<<(std::ostream &os, const graph &g)
 {
-    const size_t n = g.size();
+    const int n = g.size();
     os << n << std::endl;
-    for (size_t i = 0; i < n; ++i) {
+    for (auto i : std::views::iota(0, n)) {
         os << i << "[" << g.self_loop(i) << "]";
         for (auto j : g.nexts(i)) { os << " ->" << j; }
         for (auto j : g.prevs(i)) { os << " <-" << j; }
@@ -72,7 +73,7 @@ graph graph_builder::build(bool reverse, bool add_self_loops) const
 graph_builder start_broadcast_graph_builder(size_t n, size_t root)
 {
     graph_builder g(n);
-    for (size_t i = 0; i < n; ++i) {
+    for (auto i : std::views::iota((size_t)0, n)) {
         if (i != root) { g.add_edge(root, i); }
     }
     return g;
@@ -82,7 +83,7 @@ graph_pair make_circular_graph_pair(size_t n, size_t r)
 {
     graph_builder rg(n);
     graph_builder bg(n);
-    for (size_t i = 1; i < n; ++i) {
+    for (auto i : std::views::iota((size_t)1, n)) {
         rg.add_edge((r + i) % n, (r + i + 1) % n);
         bg.add_edge((r + i - 1) % n, (r + i) % n);
     }
@@ -102,7 +103,7 @@ graph_pair_list make_graph_pair_list_star(size_t n, size_t root)
 graph_pair_list make_graph_pair_list_ring(size_t n)
 {
     std::vector<graph_pair> pairs;
-    for (size_t i = 0; i < n; ++i) {
+    for (auto i : std::views::iota((size_t)0, n)) {
         pairs.emplace_back(make_circular_graph_pair(n, i));
     }
     return {pairs};
