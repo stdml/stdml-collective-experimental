@@ -1,0 +1,17 @@
+name: CI
+
+on:
+- push
+
+jobs:
+  build:
+
+    # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - run: ./configure --mpi
+    - run: make
+    - run: ./scripts/run/example-1.sh
