@@ -12,6 +12,9 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - run: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    - run: go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+
     - run: ./configure
     - run: make
     - run: ./scripts/run/example-1.sh
