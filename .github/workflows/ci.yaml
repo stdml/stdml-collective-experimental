@@ -12,6 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    - run: ./configure --mpi
+    - run: ./configure
     - run: make
     - run: ./scripts/run/example-1.sh
