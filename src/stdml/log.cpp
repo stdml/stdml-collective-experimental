@@ -4,16 +4,28 @@
 
 #include <stdml/bits/log.hpp>
 
+extern std::string safe_getenv(const char *name);
+
 namespace stdml::collective
 {
+bool log_enabled()
+{
+    if (safe_getenv("STDML_ENABLE_LOG") == "1") { return true; }
+    return false;
+}
+
 std::mutex logger::mu_;
+bool logger::enabled_ = log_enabled();
 
 logger::logger(std::ostream &os) : lk_(mu_), os(os)
 {
-    os << "[D] " << std::this_thread::get_id();
+    if (enabled_) { os << "[D] " << std::this_thread::get_id(); }
 }
 
-logger::~logger() { os << std::endl; }
+logger::~logger()
+{
+    if (enabled_) { os << std::endl; }
+}
 
 logger log(log_level level)
 {

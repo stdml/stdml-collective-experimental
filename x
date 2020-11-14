@@ -1,9 +1,13 @@
 #!/bin/sh
 set -e
 
+cfg_flags() {
+    echo --mpi
+}
+
 build() {
-    ./configure
-    make
+    ./configure $(cfg_flags)
+    make -j 8
 }
 
 run_all() {

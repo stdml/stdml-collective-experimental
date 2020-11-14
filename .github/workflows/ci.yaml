@@ -32,6 +32,6 @@ jobs:
 
     - run: sudo apt install -y openmpi-bin
 
-    - run: ./configure
+    - run: ./configure --mpi
     - run: make
     - run: ./scripts/run/example-mpi.sh

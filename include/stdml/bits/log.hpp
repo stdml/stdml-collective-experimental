@@ -7,6 +7,8 @@ namespace stdml::collective
 class logger
 {
     static std::mutex mu_;
+    static bool enabled_;
+
     std::lock_guard<std::mutex> lk_;
     std::ostream &os;
 
@@ -18,7 +20,16 @@ class logger
     template <typename T>
     logger &operator<<(const T &x)
     {
-        os << " " << x;
+        if (enabled_) { os << " " << x; }
+        return *this;
+    }
+};
+
+class noop_logger
+{
+    template <typename T>
+    noop_logger &operator<<(const T &x)
+    {
         return *this;
     }
 };

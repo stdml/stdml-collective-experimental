@@ -1,5 +1,10 @@
 #include <stdio.h>
-#include <stdml/mpi.h>
+
+#ifdef USE_MPI
+    #include <mpi.h>
+#else
+    #include <stdml/mpi.h>
+#endif
 
 int main(int argc, char *argv[])
 {
