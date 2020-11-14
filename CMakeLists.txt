@@ -19,6 +19,10 @@ IF(BUILD_LIB)
     TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
 ENDIF()
 
+IF(HAVE_MPI)
+    FIND_PACKAGE(MPI REQUIRED)
+ENDIF()
+
 INCLUDE(cmake/examples.cmake)
 INCLUDE(cmake/tests.cmake)
 INCLUDE(cmake/benchmarks.cmake)

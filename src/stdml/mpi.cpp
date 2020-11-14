@@ -34,3 +34,12 @@ int MPI_Comm_size(mpi_comm_t, int *p)
     *p = _default_session->size();
     return 0;
 }
+
+int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                  MPI_Datatype datatype, MPI_Op mpi_op, MPI_Comm comm)
+{
+    stdml::collective::dtype dt = stdml::collective::f32;
+    stdml::collective::reduce_op op = stdml::collective::sum;
+    _default_session->all_reduce(sendbuf, recvbuf, count, dt, op);
+    return 0;
+}

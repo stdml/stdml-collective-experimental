@@ -26,6 +26,9 @@ main() {
     # mpi_run $np ./bin/example-1
     trace mpi_run $np ./bin/example-mpi
     trace mpi_run $np ./bin/example-mpi-openmpi
+
+    # trace mpi_run $np ./bin/bench-mpi-all-reduce
+    # trace mpi_run $np ./bin/bench-mpi-all-reduce-openmpi
 }
 
 main
