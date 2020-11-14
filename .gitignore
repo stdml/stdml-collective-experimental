@@ -1,9 +1,9 @@
+*.events
+*.png
 CTestTestfile.cmake
 Makefile
 Testing
 _deps
-lib
-*.events
-*.png
-style.txt
 compile_commands.json
+lib
+style.txt

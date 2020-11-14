@@ -8,13 +8,14 @@ SET(LIBRARY_OUTPUT_PATH lib)
 FIND_PACKAGE(Threads REQUIRED)
 INCLUDE(cmake/fetch_stdtracer.cmake)
 
-ADD_COMPILE_OPTIONS(-fcoroutines)
-
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
+
+ADD_COMPILE_OPTIONS(-fcoroutines)
 
 FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
 ADD_LIBRARY(stdml-collective ${SRCS})
 TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
+TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
 
 INCLUDE(cmake/examples.cmake)
 INCLUDE(cmake/tests.cmake)
