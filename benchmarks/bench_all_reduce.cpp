@@ -110,7 +110,7 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
     for (auto i : std::views::iota(0, times)) {
         log(PRINT) << "bench step" << i;
         auto d = bench_step(session, buffers);
-        double metric = gigabytes(multiplier * tot * 4) / d;
+        double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
         metrics.push_back(metric);
         printf("%.3f GiB/s\n", metric);
     }

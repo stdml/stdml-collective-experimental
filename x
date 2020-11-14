@@ -28,4 +28,5 @@ main() {
 # ./scripts/vis/timeline.sh
 
 build
-./scripts/run/example-mpi.sh
+# ./scripts/run/example-mpi.sh
+./scripts/bench/mpi.sh
