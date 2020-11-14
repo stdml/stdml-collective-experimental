@@ -17,4 +17,6 @@ jobs:
 
     - run: ./configure
     - run: make
-    - run: ./scripts/run/example-1.sh
+    - run: |
+        export PATH=/root/go/bin:${PATH}
+        ./scripts/run/example-1.sh
