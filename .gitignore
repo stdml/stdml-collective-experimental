@@ -6,3 +6,4 @@ lib
 *.events
 *.png
 style.txt
+compile_commands.json

@@ -13,7 +13,6 @@ ADD_COMPILE_OPTIONS(-fcoroutines)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 
 FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
-# ADD_LIBRARY(stdml-collective SHARED ${SRCS})
 ADD_LIBRARY(stdml-collective ${SRCS})
 TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
 
