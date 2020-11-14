@@ -28,15 +28,14 @@ kungfu_run() {
         kungfu-run $(kungfu_run_flags $np $logdir) $@
 }
 
+run_test_set() {
+    for workload in $(cat $1); do
+        kungfu_run 4 $workload ./bin/bench-all-reduce $workload 2
+    done
+}
+
 bench_all() {
-    # kungfu_run 4 ./bin/bench-all-reduce testdata/small.txt 10
-    kungfu_run 4 1024x100 ./bin/bench-all-reduce 1024x100 2
-    kungfu_run 4 102400x100 ./bin/bench-all-reduce 102400x100 2
-    kungfu_run 4 1024000x100 ./bin/bench-all-reduce 1024000x100 2
-    kungfu_run 4 10240000x10 ./bin/bench-all-reduce 10240000x10 2
-
-    kungfu_run 4 262144x10 ./bin/bench-all-reduce 262144x10 2
-
+    run_test_set testdata/test-set-1.txt
     kungfu_run 4 resnet50 ./bin/bench-all-reduce testdata/resnet50.txt 2
 
     # kungfu_run 4 resnet50-fuse ./bin/bench-all-reduce testdata/resnet50.txt 10 fuse

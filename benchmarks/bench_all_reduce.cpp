@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 // #include <format>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -81,7 +82,7 @@ std::vector<size_t> read_int_list(const char *filename)
 using stdml::collective::log;
 using stdml::collective::PRINT;
 
-void bench(const std::vector<size_t> &sizes, int times)
+void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
 {
     pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
@@ -94,7 +95,7 @@ void bench(const std::vector<size_t> &sizes, int times)
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
 
-    stdml::collective::rchan::stat_enable();
+    // stdml::collective::rchan::stat_enable();
 
     size_t multiplier = 4 * (session.size() - 1);
 
@@ -114,11 +115,12 @@ void bench(const std::vector<size_t> &sizes, int times)
         printf("%.3f GiB/s\n", metric);
     }
 
-    stdml::collective::rchan::stat_report();
-    printf("FINAL RESULT: %.3f GiB/s\n", mean(metrics));
+    // stdml::collective::rchan::stat_report();
+    printf("FINAL RESULT: %s %.3f GiB/s\n", name.c_str(), mean(metrics));
 }
 
 struct options {
+    std::string name;
     std::vector<size_t> sizes;
     int times;
 };
@@ -126,13 +128,13 @@ struct options {
 options parse_args(int argc, char *argv[])
 {
     std::vector<size_t> sizes;
-    const char *workload = argv[1];
+    std::string workload(argv[1]);
     int x, n;
-    if (sscanf(workload, "%dx%d", &x, &n) == 2) {
+    if (sscanf(workload.c_str(), "%dx%d", &x, &n) == 2) {
         sizes.resize(n);
         std::fill(sizes.begin(), sizes.end(), x);
     } else {
-        sizes = read_int_list(workload);
+        sizes = read_int_list(workload.c_str());
     }
 
     const int times = std::stoi(argv[2]);
@@ -142,13 +144,13 @@ options parse_args(int argc, char *argv[])
         sizes = {tot};
     }
 
-    return {sizes, times};
+    return {workload, sizes, times};
 }
 
 int main(int argc, char *argv[])
 {
     TRACE_SCOPE(__func__);
     auto options = parse_args(argc, argv);
-    bench(options.sizes, options.times);
+    bench(options.name, options.sizes, options.times);
     return 0;
 }

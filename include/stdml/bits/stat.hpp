@@ -67,6 +67,10 @@ void stat_enable();
 void stat_disable();
 }  // namespace stdml::collective::rchan
 
-#define STDML_PROFILE_RATE(name, payload)                                      \
-    stdml::collective::rchan::scope __scope(                                   \
-        name, stdml::collective::rchan::_global_stat, payload);
+#ifdef STDML_ENABLE_TRACE
+    #define STDML_PROFILE_RATE(name, payload)                                  \
+        stdml::collective::rchan::scope __scope(                               \
+            name, stdml::collective::rchan::_global_stat, payload)
+#else
+    #define STDML_PROFILE_RATE(name, payload)
+#endif
