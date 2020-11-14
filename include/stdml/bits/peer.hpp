@@ -21,8 +21,9 @@ class peer
     std::unique_ptr<slotbox> slotbox_;
     std::unique_ptr<rchan::handler> handler_;
 
-    std::unique_ptr<rchan::client_pool> client_pool_;
+    // destruct client before server
     std::unique_ptr<rchan::server> server_;
+    std::unique_ptr<rchan::client_pool> client_pool_;  //
 
   public:
     static peer single();
@@ -33,8 +34,6 @@ class peer
 
     peer(const peer_id self, const peer_list init_peers,
          const strategy init_strategy = star);
-
-    ~peer();
 
     void start();
     void stop();

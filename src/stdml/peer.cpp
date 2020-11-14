@@ -42,10 +42,7 @@ peer::peer(const peer_id self, const peer_list init_peers,
       handler_(rchan::handler::New(mailbox_.get(), slotbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
-    start();
 }
-
-peer::~peer() { stop(); }
 
 peer peer::single()
 {
@@ -63,7 +60,9 @@ peer peer::from_kungfu_env()
     if (!peers) { return single(); }
     const strategy s = parse_kungfu_startegy();
     log() << "using strategy" << s;
-    return peer(self.value(), peers.value(), s);
+    peer p(self.value(), peers.value(), s);
+    p.start();
+    return p;
 }
 
 peer peer::from_ompi_env()
@@ -73,7 +72,9 @@ peer peer::from_ompi_env()
     const auto rank = parse_env_int("OMPI_COMM_WORLD_RANK");
     if (!rank) { return single(); }
     const auto ps = peer_list::gen(size.value());
-    return peer(ps[rank.value()], ps);
+    peer p(ps[rank.value()], ps);
+    p.start();
+    return p;
 }
 
 bool using_kungfu() { return std::getenv("KUNGFU_SELF_SPEC") != nullptr; }
