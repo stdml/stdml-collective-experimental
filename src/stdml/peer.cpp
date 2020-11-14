@@ -32,9 +32,11 @@ std::optional<int> parse_env_int(const std::string &s)
 
 namespace stdml::collective
 {
-peer::peer(const peer_id self, const peer_list init_peers)
+peer::peer(const peer_id self, const peer_list init_peers,
+           const strategy init_strategy)
     : self_(self),
       init_peers_(init_peers),
+      init_strategy_(init_strategy),
       mailbox_(new mailbox),
       slotbox_(new slotbox),
       handler_(rchan::handler::New(mailbox_.get(), slotbox_.get())),
@@ -51,13 +53,17 @@ peer peer::single()
     return peer(id, {id});
 }
 
+extern strategy parse_kungfu_startegy();
+
 peer peer::from_kungfu_env()
 {
     const auto self = parse_peer_id(safe_getenv("KUNGFU_SELF_SPEC"));
     if (!self) { return single(); }
     const auto peers = parse_peer_list(safe_getenv("KUNGFU_INIT_PEERS"));
     if (!peers) { return single(); }
-    return peer(self.value(), peers.value());
+    const strategy s = parse_kungfu_startegy();
+    log() << "using strategy" << s;
+    return peer(self.value(), peers.value(), s);
 }
 
 peer peer::from_ompi_env()
@@ -97,7 +103,7 @@ void peer::stop()
 session peer::join()
 {
     session sess(self_, init_peers_, mailbox_.get(), slotbox_.get(),
-                 client_pool_.get());
+                 client_pool_.get(), init_strategy_);
     return std::move(sess);
 }
 }  // namespace stdml::collective

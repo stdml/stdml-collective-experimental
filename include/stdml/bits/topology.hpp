@@ -71,7 +71,7 @@ struct graph_pair_list {
 enum strategy {
     star,
     ring,
-    binary_tree,
+    // binary_tree,
 };
 
 graph_builder start_broadcast_graph_builder(size_t n, size_t root);

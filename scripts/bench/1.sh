@@ -13,6 +13,9 @@ kungfu_run_flags() {
 
     echo -H "127.0.0.1:$np"
     echo -np $np
+
+    echo -strategy STAR
+    # echo -strategy RING
 }
 
 kungfu_run() {

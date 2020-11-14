@@ -15,6 +15,7 @@ class peer
 {
     const peer_id self_;
     const peer_list init_peers_;
+    const strategy init_strategy_;
 
     std::unique_ptr<mailbox> mailbox_;
     std::unique_ptr<slotbox> slotbox_;
@@ -30,7 +31,8 @@ class peer
     static peer from_ompi_env();
     static peer from_env();
 
-    peer(const peer_id self, const peer_list init_peers);
+    peer(const peer_id self, const peer_list init_peers,
+         const strategy init_strategy = star);
 
     ~peer();
 

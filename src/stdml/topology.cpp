@@ -78,6 +78,17 @@ graph_builder start_broadcast_graph_builder(size_t n, size_t root)
     return g;
 }
 
+graph_pair make_circular_graph_pair(size_t n, size_t r)
+{
+    graph_builder rg(n);
+    graph_builder bg(n);
+    for (size_t i = 1; i < n; ++i) {
+        rg.add_edge((r + i) % n, (r + i + 1) % n);
+        bg.add_edge((r + i - 1) % n, (r + i) % n);
+    }
+    return {rg.build(false, true), bg.build()};
+}
+
 graph_pair_list make_graph_pair_list_star(size_t n, size_t root)
 {
     graph_builder g = start_broadcast_graph_builder(n, root);
@@ -88,12 +99,22 @@ graph_pair_list make_graph_pair_list_star(size_t n, size_t root)
     return {.pairs = {p}};
 }
 
+graph_pair_list make_graph_pair_list_ring(size_t n)
+{
+    std::vector<graph_pair> pairs;
+    for (size_t i = 0; i < n; ++i) {
+        pairs.emplace_back(make_circular_graph_pair(n, i));
+    }
+    return {pairs};
+}
+
 graph_pair_list make_graph_pair_list(strategy s, size_t n)
 {
     switch (s) {
     case star:
         return make_graph_pair_list_star(n, 0);
-    // case ring: // TODO
+    case ring:
+        return make_graph_pair_list_ring(n);
     //
     default:
         return make_graph_pair_list_star(n, 0);
