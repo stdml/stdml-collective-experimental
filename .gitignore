@@ -1,5 +1,7 @@
 *.events
 *.png
+CPackConfig.cmake
+CPackSourceConfig.cmake
 CTestTestfile.cmake
 Makefile
 Testing
@@ -7,4 +9,5 @@ _deps
 compile_commands.json
 install_manifest.txt
 lib
+release
 style.txt

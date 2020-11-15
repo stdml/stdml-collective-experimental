@@ -12,6 +12,18 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - run: ./configure --shared --disable-cxx11-abi
+    - run: make
+    - run: make package
+
+  test:
+
+    # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+
     - run: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
     - run: go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
 
