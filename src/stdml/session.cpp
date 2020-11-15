@@ -19,17 +19,17 @@ class workspace_state
     std::mutex mu_;
 
     const workspace *w;
-    uint32_t recv_count;
+    uint32_t recv_count_;
 
   public:
-    workspace_state(const workspace *w) : w(w), recv_count(0) {}
+    workspace_state(const workspace *w) : w(w), recv_count_(0) {}
 
     const workspace *operator->() const { return w; }
 
     const void *effective_data()
     {
         std::lock_guard<std::mutex> _(mu_);  //
-        if (recv_count > 0) {
+        if (recv_count_ > 0) {
             return w->recv;
         } else {
             return w->send;
@@ -41,15 +41,19 @@ class workspace_state
         const void *ptr = effective_data();
         std::lock_guard<std::mutex> _(mu_);
         reduce(w->recv, data, ptr, w->count, w->dt, w->op);
-        ++recv_count;
+        ++recv_count_;
     }
 
     void replace(const void *data)
     {
         std::lock_guard<std::mutex> _(mu_);
         std::memcpy(w->recv, data, w->data_size());
-        ++recv_count;
+        ++recv_count_;
     }
+
+    void forward() { std::memcpy(w->recv, w->send, w->data_size()); }
+
+    uint32_t recv_count() const { return recv_count_; }
 };
 
 struct recv {
@@ -128,7 +132,11 @@ void session::run_graphs(const workspace &w,
             par(recv(this, &state, true), prevs);
             par(send(this, &state, true), nexts);
         } else {
-            seq(recv(this, &state, false), prevs);
+            if (prevs.size() == 0 && state.recv_count() == 0) {
+                state.forward();
+            } else {
+                seq(recv(this, &state, false), prevs);
+            }
             par(send(this, &state, false), nexts);
         }
     }
