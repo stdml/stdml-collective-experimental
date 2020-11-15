@@ -16,6 +16,11 @@ jobs:
     - run: make
     - run: make package
 
+    - uses: actions/upload-artifact@v2
+      with:
+        name: libstdml-collective
+        path: release/stdml-collective-latest-Linux.tar.gz
+
   test:
 
     # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
