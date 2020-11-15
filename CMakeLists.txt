@@ -17,6 +17,9 @@ IF(BUILD_LIB)
     ADD_LIBRARY(stdml-collective ${SRCS})
     TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
     TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
+
+    INSTALL(DIRECTORY include DESTINATION .)
+    INSTALL(TARGETS stdml-collective ARCHIVE DESTINATION lib)
 ENDIF()
 
 IF(HAVE_MPI)
