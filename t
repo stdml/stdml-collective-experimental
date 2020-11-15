@@ -8,9 +8,10 @@ rebuild() {
 
 kungfu_run_flags() {
     local np=$1
+    local logdir=$2
 
     echo -q
-    echo -logdir logs/test
+    echo -logdir $logdir
     echo -H "127.0.0.1:$np"
     echo -np $np
 }
@@ -18,7 +19,9 @@ kungfu_run_flags() {
 kungfu_run() {
     local np=$1
     shift
-    kungfu-run $(kungfu_run_flags $np) $@
+    local logdir=$1
+    shift
+    kungfu-run $(kungfu_run_flags $np $logdir) $@
 }
 
 trace() {
@@ -30,8 +33,8 @@ trace() {
 }
 
 test_all() {
-    for n in $(seq 1 16); do
-        trace kungfu_run $n ./bin/test-all-reduce
+    for np in $(seq 1 16); do
+        trace kungfu_run $np "logs/test/np=$np" ./bin/test-all-reduce
     done
 }
 

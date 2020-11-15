@@ -4,10 +4,21 @@
 
 #include <stdml/collective>
 
+#include <cxxabi.h>
+
 template <typename T>
-void test_all_reduce(stdml::collective::session &sess, size_t count,
-                     stdml::collective::dtype dt, const char *dt_name)
+std::string type_name()
 {
+    int status = 0;
+    return abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
+}
+
+template <typename T>
+int test_all_reduce(stdml::collective::session &sess, size_t count)
+{
+    const stdml::collective::dtype dt = stdml::collective::type<T>();
+    const std::string dt_name = type_name<T>();
+
     std::vector<T> x(count);
     std::vector<T> y(count);
     std::vector<T> z(count);
@@ -21,27 +32,30 @@ void test_all_reduce(stdml::collective::session &sess, size_t count,
     if (!std::equal(y.begin(), y.end(), z.begin())) {
         std::cerr << "failed" << std::endl;
         std::cerr << "want: " << result << ", got: " << y[0] << std::endl;
-        // exit(1);
+        return 1;
     } else {
-        std::cout << "OK all_reduce(dtype=" << dt_name << ", count=" << count
-                  << ")" << std::endl;
+        std::cout << "OK all_reduce(count=" << count << ", "
+                  << "dtype=" << dt_name << ")" << std::endl;
+        return 0;
     }
 }
 
-void test_all_reduce_all(stdml::collective::session &sess, size_t count)
+int test_all_reduce_all(stdml::collective::session &sess, size_t count)
 {
-    test_all_reduce<int8_t>(sess, count, stdml::collective::i8, "i8");
-    test_all_reduce<int16_t>(sess, count, stdml::collective::i16, "i16");
-    test_all_reduce<int32_t>(sess, count, stdml::collective::i32, "i32");
-    test_all_reduce<int64_t>(sess, count, stdml::collective::i64, "i64");
+    int f = 0;
+    f += test_all_reduce<int8_t>(sess, count);
+    f += test_all_reduce<int16_t>(sess, count);
+    f += test_all_reduce<int32_t>(sess, count);
+    f += test_all_reduce<int64_t>(sess, count);
 
-    test_all_reduce<uint8_t>(sess, count, stdml::collective::u8, "u8");
-    test_all_reduce<uint16_t>(sess, count, stdml::collective::u16, "u16");
-    test_all_reduce<uint32_t>(sess, count, stdml::collective::u32, "u32");
-    test_all_reduce<uint64_t>(sess, count, stdml::collective::u64, "u64");
+    f += test_all_reduce<uint8_t>(sess, count);
+    f += test_all_reduce<uint16_t>(sess, count);
+    f += test_all_reduce<uint32_t>(sess, count);
+    f += test_all_reduce<uint64_t>(sess, count);
 
-    test_all_reduce<float>(sess, count, stdml::collective::f32, "f32");
-    test_all_reduce<double>(sess, count, stdml::collective::f64, "f64");
+    f += test_all_reduce<float>(sess, count);
+    f += test_all_reduce<double>(sess, count);
+    return f;
 }
 
 int main()
@@ -51,6 +65,13 @@ int main()
     auto counts = {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1024,
     };
-    for (auto count : counts) { test_all_reduce_all(sess, count); }
+    int failed = 0;
+    for (auto count : counts) { failed += test_all_reduce_all(sess, count); }
+    if (failed) {
+        std::cerr << failed << " failed!" << std::endl;
+        return 1;
+    } else {
+        std::cout << "all tests passed." << std::endl;
+    }
     return 0;
 }
