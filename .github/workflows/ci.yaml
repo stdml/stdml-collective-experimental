@@ -20,7 +20,8 @@ jobs:
         go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
         export PATH=$GOBIN:$PATH
 
-        ./scripts/run/example-1.sh
+        # ./scripts/run/example-1.sh
+        ./t
 
   mpi:
     runs-on: ubuntu-20.04
