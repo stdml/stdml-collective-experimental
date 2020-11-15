@@ -4,9 +4,37 @@ on:
 - push
 
 jobs:
-  build:
-
+  test:
     # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - run: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+
+    - run: ./configure
+    - run: make
+    - run: |
+        export GOBIN=$HOME/go/bin
+        go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+        export PATH=$GOBIN:$PATH
+
+        ./scripts/run/example-1.sh
+
+  mpi:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - run: sudo apt install -y openmpi-bin
+
+    - run: ./configure --mpi
+    - run: make
+    - run: ./scripts/run/example-mpi.sh
+
+  release:
     runs-on: ubuntu-20.04
 
     steps:
@@ -20,35 +48,3 @@ jobs:
       with:
         name: libstdml-collective
         path: release/stdml-collective-latest-Linux.tar.gz
-
-  test:
-
-    # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
-    runs-on: ubuntu-20.04
-
-    steps:
-    - uses: actions/checkout@v1
-
-    - run: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
-    - run: go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
-
-    - run: ./configure
-    - run: make
-    # - run: |
-    #     # env: ‘kungfu-run’: Permission denied
-    #     export PATH=/root/go/bin:${PATH}
-    #     ./scripts/run/example-1.sh
-
-  mpi:
-
-    # https://help.github.com/en/articles/virtual-environments-for-github-actions#supported-virtual-environments
-    runs-on: ubuntu-20.04
-
-    steps:
-    - uses: actions/checkout@v1
-
-    - run: sudo apt install -y openmpi-bin
-
-    - run: ./configure --mpi
-    - run: make
-    - run: ./scripts/run/example-mpi.sh
