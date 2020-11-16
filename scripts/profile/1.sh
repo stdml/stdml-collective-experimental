@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+. ./scripts/profile/measure.sh
+
 export LD_LIBRARY_PATH=$HOME/local/opencv/lib
 
 kungfu_run_flags() {
@@ -80,19 +82,35 @@ summary_one() {
 run_one() {
     local size=$1
     local count=$2
-    # profile_one $size $count
+    local name="${size}x${count}"
+
+    # if [ ! -d logs/profile/$name ]; then
+    #     profile_one $size $count
+    # fi
+    profile_one $size $count
     summary_one $size $count
 }
 
 main() {
-    # run_one 1024 200
+    run_one 1024 200
     # run_one 2048 100
     # run_one 4096 50
-    run_one 8192 20
+    # run_one 8192 20
     # run_one 10240 20
 }
 
+export STDML_USE_THREAD_POOL=0
 main
+cp 1024x200.png 0.png
+
+export STDML_USE_THREAD_POOL=1
+main
+cp 1024x200.png 1.png
+
+# export STDML_USE_THREAD_POOL=0
+# measure profile_one 1024 100
+# export STDML_USE_THREAD_POOL=1
+# measure profile_one 1024 100
 
 # 0 1 2 3 4 5 6 7 8 9 a b c d e f
 #   x   x   x   x   x   x   x   x

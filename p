@@ -16,9 +16,10 @@ run_all() {
 }
 
 main() {
-    if [ ! -f bin/bench-all-reduce ]; then
-        build
-    fi
+    # if [ ! -f bin/bench-all-reduce ]; then
+    #     build
+    # fi
+    build
     run_all
 }
 

@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstring>
+#include <execution>
 #include <functional>
 #include <iostream>
 #include <numeric>
@@ -8,6 +9,7 @@
 
 #include <stdml/bits/affinity.hpp>
 #include <stdml/bits/connection.hpp>
+#include <stdml/bits/execution.hpp>
 #include <stdml/bits/log.hpp>
 #include <stdml/bits/session.hpp>
 #include <stdml/bits/stat.hpp>
@@ -16,6 +18,8 @@
 
 namespace stdml::collective
 {
+extern bool parse_env_bool(const std::string &s);
+
 session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
                  slotbox *slotbox, rchan::client_pool *client_pool,
                  const strategy s)
@@ -26,7 +30,12 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
       slotbox_(slotbox),
       client_pool_(client_pool)
 {
-    // pool_.reset(sync::thread_pool::New(3));
+    if (parse_env_bool("STDML_USE_THREAD_POOL")) {
+        log() << "using thread pool";
+        pool_.reset(sync::thread_pool::New(3));
+    } else {
+        log() << "not using thread pool";
+    }
     // set_affinity(rank_, peers.size());  // FIXME: use local
     barrier();
 }
@@ -120,39 +129,25 @@ struct send {
     }
 };
 
-template <typename F, typename L>
-void par(const F &f, const L &xs)
-{
-    std::vector<std::thread> ths;
-    for (const auto &x : xs) {
-        ths.push_back(std::thread([&, x = x] { f(x); }));
-    }
-    for (auto &th : ths) { th.join(); }
-}
-
-template <typename F, typename L>
-void seq(const F &f, const L &xs)
-{
-    for (const auto &x : xs) { f(x); }
-}
-
 void session::run_graphs(const workspace &w,
                          const std::vector<const graph *> &gs)
 {
+    auto par = pool_.get();
+    auto seq = std::execution::seq;
     workspace_state state(&w);
     for (const auto g : gs) {
         const auto prevs = peers_[g->prevs(rank_)];
         const auto nexts = peers_[g->nexts(rank_)];
         if (g->self_loop(rank_)) {
-            par(recv(this, &state, true), prevs);
-            par(send(this, &state, true), nexts);
+            fmap(par, recv(this, &state, true), prevs);
+            fmap(par, send(this, &state, true), nexts);
         } else {
             if (prevs.size() == 0 && state.recv_count() == 0) {
                 state.forward();
             } else {
-                seq(recv(this, &state, false), prevs);
+                fmap(seq, recv(this, &state, false), prevs);
             }
-            par(send(this, &state, false), nexts);
+            fmap(par, send(this, &state, false), nexts);
         }
     }
 }
@@ -181,7 +176,8 @@ size_t session::run_graph_pair_list(const workspace &w,
         const auto &[g0, g1] = gps.choose(j);
         run_graphs(ws[i], {g0, g1});
     };
-    par(f, std::views::iota((size_t)0, ws.size()));
+    // don't use thread pool here
+    fmap(std::execution::par, f, std::views::iota((size_t)0, ws.size()));
     return k;
 }
 
