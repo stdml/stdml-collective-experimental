@@ -6,6 +6,7 @@
 #include <ranges>
 #include <thread>
 
+#include <stdml/bits/affinity.hpp>
 #include <stdml/bits/connection.hpp>
 #include <stdml/bits/log.hpp>
 #include <stdml/bits/session.hpp>
@@ -14,6 +15,20 @@
 
 namespace stdml::collective
 {
+session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
+                 slotbox *slotbox, rchan::client_pool *client_pool,
+                 const strategy s)
+    : peers_(peers),
+      rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
+      all_reduce_topo_(make_graph_pair_list(s, peers.size())),
+      mailbox_(mailbox),
+      slotbox_(slotbox),
+      client_pool_(client_pool)
+{
+    // set_affinity(rank_, peers.size());  // FIXME: use local
+    barrier();
+}
+
 class workspace_state
 {
     std::mutex mu_;

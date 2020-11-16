@@ -32,18 +32,7 @@ class session
 
     session(const peer_id self, const peer_list peers, mailbox *mailbox,
             slotbox *slotbox, rchan::client_pool *client_pool,
-            const strategy s = star)
-        : peers_(peers),
-          rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
-          all_reduce_topo_(make_graph_pair_list(s, peers.size())),
-          mailbox_(mailbox),
-          slotbox_(slotbox),
-          client_pool_(client_pool)
-    {
-        barrier();
-    }
-
-    ~session() {}
+            const strategy s = star);
 
     size_t rank() { return rank_; }
 
