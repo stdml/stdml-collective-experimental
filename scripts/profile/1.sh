@@ -72,23 +72,24 @@ summary_one() {
     parse_timeline 2 $size logs/profile/$name/127.0.0.1.10002.stdout.log | tail -n +1 >2.events
     parse_timeline 3 $size logs/profile/$name/127.0.0.1.10003.stdout.log | tail -n +1 >3.events
 
+    cat 0.events 1.events 2.events 3.events >all.events
     style >style.txt
-    vis-interval 0.events,1.events,2.events,3.events $name.png 18,4,4,4 1 0 15
+    vis-interval '0.events,1.events,2.events,3.events;all.events' $name.png '18,4,4,4;30' 1 2 15
 }
 
 run_one() {
     local size=$1
     local count=$2
-    profile_one $size $count
+    # profile_one $size $count
     summary_one $size $count
 }
 
 main() {
-    run_one 1024 200
-    run_one 2048 100
-    run_one 4096 50
-    run_one 8192 25
-    run_one 10240 20
+    # run_one 1024 200
+    # run_one 2048 100
+    # run_one 4096 50
+    run_one 8192 20
+    # run_one 10240 20
 }
 
 main

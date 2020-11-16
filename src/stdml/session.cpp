@@ -11,6 +11,7 @@
 #include <stdml/bits/log.hpp>
 #include <stdml/bits/session.hpp>
 #include <stdml/bits/stat.hpp>
+#include <stdml/bits/thread_pool.hpp>
 #include <stdml/bits/topology.hpp>
 
 namespace stdml::collective
@@ -25,6 +26,7 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
       slotbox_(slotbox),
       client_pool_(client_pool)
 {
+    // pool_.reset(sync::thread_pool::New(3));
     // set_affinity(rank_, peers.size());  // FIXME: use local
     barrier();
 }
@@ -122,7 +124,7 @@ template <typename F, typename L>
 void par(const F &f, const L &xs)
 {
     std::vector<std::thread> ths;
-    for (const auto x : xs) {
+    for (const auto &x : xs) {
         ths.push_back(std::thread([&, x = x] { f(x); }));
     }
     for (auto &th : ths) { th.join(); }
@@ -131,7 +133,7 @@ void par(const F &f, const L &xs)
 template <typename F, typename L>
 void seq(const F &f, const L &xs)
 {
-    for (const auto x : xs) { f(x); }
+    for (const auto &x : xs) { f(x); }
 }
 
 void session::run_graphs(const workspace &w,
@@ -139,11 +141,8 @@ void session::run_graphs(const workspace &w,
 {
     workspace_state state(&w);
     for (const auto g : gs) {
-        // log(PRINT) << *g;
         const auto prevs = peers_[g->prevs(rank_)];
         const auto nexts = peers_[g->nexts(rank_)];
-        // log(PRINT) << "prevs" << prevs;
-        // log(PRINT) << "nexts" << nexts;
         if (g->self_loop(rank_)) {
             par(recv(this, &state, true), prevs);
             par(send(this, &state, true), nexts);

@@ -7,12 +7,15 @@
 #include <stdml/bits/dtype.hpp>
 #include <stdml/bits/mailbox.hpp>
 #include <stdml/bits/rchan.hpp>
+#include <stdml/bits/thread_pool.hpp>
 #include <stdml/bits/topology.hpp>
 
 namespace stdml::collective
 {
 class session
 {
+    std::unique_ptr<sync::thread_pool> pool_;
+
     const peer_list peers_;
     const size_t rank_;
 

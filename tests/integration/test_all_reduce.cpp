@@ -1,5 +1,6 @@
 #include <iostream>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
 #include <stdml/collective>
@@ -14,10 +15,35 @@ std::string type_name()
 }
 
 template <typename T>
+struct lift {
+    using type = T;
+};
+
+template <>
+struct lift<int8_t> {
+    using type = int32_t;
+};
+
+template <>
+struct lift<uint8_t> {
+    using type = uint32_t;
+};
+
+template <typename T>
+std::string show_value(T x)
+{
+    using U = typename lift<T>::type;
+    return std::to_string(static_cast<U>(x));
+}
+
+template <typename T>
 int test_all_reduce(stdml::collective::session &sess, size_t count)
 {
     const stdml::collective::dtype dt = stdml::collective::type<T>();
     const std::string dt_name = type_name<T>();
+    std::stringstream name;
+    name << "all_reduce(count=" << count << ", "
+         << "dtype=" << dt_name << ")";
 
     std::vector<T> x(count);
     std::vector<T> y(count);
@@ -30,12 +56,12 @@ int test_all_reduce(stdml::collective::session &sess, size_t count)
     std::iota(y.begin(), y.end(), -0xfffff);
     sess.all_reduce(x.data(), y.data(), count, dt, stdml::collective::sum);
     if (!std::equal(y.begin(), y.end(), z.begin())) {
-        std::cerr << "failed" << std::endl;
-        std::cerr << "want: " << result << ", got: " << y[0] << std::endl;
+        std::cerr << "Failed " << name.str()  //
+                  << " want: " << show_value(result)
+                  << ", got: " << show_value(y[0]) << std::endl;
         return 1;
     } else {
-        std::cout << "OK all_reduce(count=" << count << ", "
-                  << "dtype=" << dt_name << ")" << std::endl;
+        std::cout << "OK " << name.str() << std::endl;
         return 0;
     }
 }
