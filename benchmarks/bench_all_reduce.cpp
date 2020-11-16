@@ -1,7 +1,8 @@
 #include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
-// #include <format>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -13,11 +14,11 @@
 #include <stdml/bits/stat.hpp>
 #include <stdml/collective>
 
-#include <tracer/simple_log>
+// #include <tracer/simple_log>
 
 #include "common.hpp"
 
-DEFINE_TRACE_CONTEXTS;
+// DEFINE_TRACE_CONTEXTS;
 
 double gigabytes(size_t n)
 {
@@ -58,7 +59,7 @@ void bench_all_reduce_one(stdml::collective::session &session,
 double bench_step(stdml::collective::session &session,
                   std::vector<fake_cpu_buffer_t<float>> &buffers)
 {
-    TRACE_SCOPE(__func__);
+    // TRACE_SCOPE(__func__);
     auto t0 = C::now();
     for (auto &b : buffers) {
         // auto [d, g] =
@@ -90,7 +91,7 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
     log(PRINT) << "total size" << tot * 4 <<  //
         "(" << gigabytes(tot * 4) << " GiB)";
 
-    stdml::collective::rchan::stat_disable();
+    // stdml::collective::rchan::stat_disable();
 
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session session = peer.join();
@@ -114,8 +115,6 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
         metrics.push_back(metric);
         printf("%.3f GiB/s\n", metric);
     }
-
-    // stdml::collective::rchan::stat_report();
     printf("FINAL RESULT: %s %.3f GiB/s\n", name.c_str(), mean(metrics));
 }
 
@@ -147,10 +146,18 @@ options parse_args(int argc, char *argv[])
     return {workload, sizes, times};
 }
 
+void signal_handler(int sig)
+{
+    log() << "signal" << sig << ":" << strsignal(sig);  //
+}
+
 int main(int argc, char *argv[])
 {
-    TRACE_SCOPE(__func__);
+    // TRACE_SCOPE(__func__);
     auto options = parse_args(argc, argv);
+
+    std::signal(SIGINT, signal_handler);
+
     bench(options.name, options.sizes, options.times);
     return 0;
 }

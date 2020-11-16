@@ -4,13 +4,13 @@
 
 #include <stdml/bits/log.hpp>
 
-extern std::string safe_getenv(const char *name);
-
 namespace stdml::collective
 {
+extern bool parse_env_bool(const std::string &s);
+
 bool log_enabled()
 {
-    if (safe_getenv("STDML_ENABLE_LOG") == "1") { return true; }
+    if (parse_env_bool("STDML_ENABLE_LOG")) { return true; }
     return false;
 }
 

@@ -3,12 +3,21 @@
 
 #include <stdml/bits/stat.hpp>
 
+namespace stdml::collective
+{
+extern bool parse_env_bool(const std::string &s);
+}
+
 namespace stdml::collective::rchan
 {
 stat _global_stat;
 
-stat::stat() : enabled_(false) { events_.reserve(1 << 20); }
-stat::~stat() {}
+stat::stat() : enabled_(parse_env_bool("STDML_ENABLE_TRACE"))
+{
+    events_.reserve(1 << 20);
+}
+
+stat::~stat() { report(); }
 
 void stat::enable() { enabled_ = true; }
 

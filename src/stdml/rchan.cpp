@@ -77,7 +77,8 @@ class connection_impl : public connection
                 log() << "connected to" << ep << "after" << i << "retries";
                 break;
             }
-            log() << "conn to" << ep << "failed :" << ec;
+            log() << "conn to" << ep << "failed :" << ec  //
+                  << "(" << ec.message() << ")";
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(1s);
         }
@@ -323,7 +324,8 @@ class server_impl : public server
                 log() << "bind success after" << i << "retries";
                 break;
             }
-            log() << "bind error code:" << ec;
+            log() << "bind to" << ep << "failed :" << ec  //
+                  << "(" << ec.message() << ")";
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(1s);
         }
@@ -368,13 +370,17 @@ class server_impl : public server
         const tcp_endpoint ep(addr, id.port);
 
         acceptor_.open(ep.protocol());
+        // tcp_acceptor::reuse_address option;
+        // acceptor_.get_option(option);
+        // log() << "option:" << option;
+
         wait_bind(acceptor_, ep);
         acceptor_.listen(5);
 
         log() << "serving" << ep;
         _accept_loop();
         const auto n = ctx_.run();
-        log() << "serving finished after" << n;
+        log() << "serving finished after io_context run" << n << "steps";
     }
 
   public:
@@ -403,9 +409,9 @@ class server_impl : public server
     void stop() override
     {
         if (thread_.get()) {
-            log() << "joining ..";
+            log() << "joining threads ..";
             acceptor_.cancel();
-            log() << "canceled ..";
+            log() << "acceptor anceled .";
             ctx_.stop();
             thread_->join();  //
             log() << "serving thread joined.";

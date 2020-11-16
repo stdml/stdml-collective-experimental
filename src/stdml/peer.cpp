@@ -16,22 +16,11 @@
 #include <stdml/bits/peer.hpp>
 #include <stdml/bits/rchan.hpp>
 
-std::string safe_getenv(const char *name)
-{
-    const char *ptr = std::getenv(name);
-    if (ptr) { return std::string(ptr); }
-    return "";
-}
-
-std::optional<int> parse_env_int(const std::string &s)
-{
-    const auto v = safe_getenv(s.c_str());
-    if (v.empty()) return {};
-    return std::stoi(v);
-}
-
 namespace stdml::collective
 {
+extern std::string safe_getenv(const char *name);
+extern std::optional<int> parse_env_int(const std::string &s);
+
 peer::peer(const peer_id self, const peer_list init_peers,
            const strategy init_strategy)
     : self_(self),
