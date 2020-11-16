@@ -1,3 +1,4 @@
+*.bmp
 *.events
 *.png
 CPackConfig.cmake
