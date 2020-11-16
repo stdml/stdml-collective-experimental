@@ -40,6 +40,7 @@ class workspace_state
     {
         const void *ptr = effective_data();
         std::lock_guard<std::mutex> _(mu_);
+        STDML_PROFILE_RATE(__func__, w->count * 4);
         reduce(w->recv, data, ptr, w->count, w->dt, w->op);
         ++recv_count_;
     }
