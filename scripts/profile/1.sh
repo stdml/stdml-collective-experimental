@@ -32,33 +32,43 @@ kungfu_run() {
 
 profile_all() {
     # kungfu_run 4 1024x100 ./bin/bench-all-reduce 1024x1000 1
-    kungfu_run 4 1024x100 ./bin/bench-all-reduce 1024x10 1
+    kungfu_run 4 10240x10 ./bin/bench-all-reduce 10240x10 1
     # kungfu_run 4 1024x100 kungfu-bench-allreduce
 }
 
 parse_timeline() {
-    local filename=$1
-    grep '``' $filename | awk '{if ($6 == "4096") print $3, $4, $2}'
+    local suffix=$1
+    local filename=$2
+    grep '``' $filename | awk "{if (\$6 == \"40960\") print \$3, \$4, \$2 \"$suffix\"}"
 }
 
 style() {
-    echo "send red"
-    echo "read_body green"
+    echo "send0 red"
+    echo "read_body0 green"
+
+    echo "send1 red"
+    echo "send2 red"
+    echo "send3 red"
+
+    echo "read_body1 green"
+    echo "read_body2 green"
+    echo "read_body3 green"
 }
 
 summary_all() {
-    parse_timeline logs/profile/1024x100/127.0.0.1.10000.stdout.log >0.events
-    parse_timeline logs/profile/1024x100/127.0.0.1.10001.stdout.log >1.events
-    parse_timeline logs/profile/1024x100/127.0.0.1.10002.stdout.log >2.events
-    parse_timeline logs/profile/1024x100/127.0.0.1.10003.stdout.log >3.events
+    name=10240x10
+    parse_timeline 0 logs/profile/$name/127.0.0.1.10000.stdout.log >0.events
+    parse_timeline 1 logs/profile/$name/127.0.0.1.10001.stdout.log >1.events
+    parse_timeline 2 logs/profile/$name/127.0.0.1.10002.stdout.log >2.events
+    parse_timeline 3 logs/profile/$name/127.0.0.1.10003.stdout.log >3.events
 
     style >style.txt
-    vis-interval 0.events,1.events,2.events,3.events x.bmp 12,4,4,4 3 3
-    # vis-interval 0.events,1.events,2.events,3.events x.png 12,4,4,4 3 3
+    # vis-interval 0.events,1.events,2.events,3.events x.bmp 12,4,4,4 3 3
+    vis-interval 0.events,1.events,2.events,3.events x.png 12,4,4,4 100
 }
 
 main() {
-    profile_all
+    # profile_all
     summary_all
 }
 
