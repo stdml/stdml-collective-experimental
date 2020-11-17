@@ -108,8 +108,7 @@ class thread_pool_impl : public thread_pool
 
     void add_worker()
     {
-        std::thread th([this] { worker(); });
-        ths_.push_back(std::move(th));
+        ths_.emplace_back([this] { worker(); });
     }
 
   public:

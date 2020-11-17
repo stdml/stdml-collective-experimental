@@ -313,7 +313,7 @@ class server_impl : public server
     tcp_acceptor acceptor_;
 
     std::unique_ptr<std::thread> thread_;
-    std::vector<std::unique_ptr<std::thread>> handle_threads_;
+    std::vector<std::thread> handle_threads_;
 
     static void wait_bind(tcp_acceptor &acceptor, const tcp_endpoint &ep)
     {
@@ -345,12 +345,12 @@ class server_impl : public server
 
     void handle(tcp_socket socket)
     {
-        handle_threads_.push_back(std::make_unique<std::thread>(
+        handle_threads_.emplace_back(
             [h = handler_, socket = std::move(socket)]() mutable {
                 const auto [src, type] = upgrade(socket);
                 auto n = (*h)(src, type, std::move(socket));
                 log() << "handle finished after" << n << "messages";
-            }));
+            });
     }
 
     void _accept_loop()
@@ -415,7 +415,7 @@ class server_impl : public server
             ctx_.stop();
             thread_->join();  //
             log() << "serving thread joined.";
-            for (auto &th : handle_threads_) { th->join(); }
+            for (auto &th : handle_threads_) { th.join(); }
             log() << "all" << handle_threads_.size()
                   << "handling threads joined.";
         }

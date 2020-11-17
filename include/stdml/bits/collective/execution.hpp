@@ -13,7 +13,7 @@ void par(const F &f, const L &xs)
     std::vector<std::thread> ths;
     ths.reserve(xs.size());
     for (const auto &x : xs) {
-        ths.push_back(std::thread([&, x = x] { f(x); }));
+        ths.emplace_back([&, x = x] { f(x); });
     }
     for (auto &th : ths) { th.join(); }
 }
