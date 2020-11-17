@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-#include <stdml/bits/stat.hpp>
+#include <stdml/bits/collective/stat.hpp>
 #include <stdml/collective>
 
 // #include <tracer/simple_log>

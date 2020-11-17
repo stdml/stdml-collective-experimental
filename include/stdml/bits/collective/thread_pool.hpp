@@ -1,6 +1,6 @@
 #pragma once
 #include <functional>
-#include <stdml/bits/waitgroup.hpp>
+#include <stdml/bits/collective/waitgroup.hpp>
 
 namespace stdml::sync
 {

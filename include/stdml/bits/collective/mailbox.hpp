@@ -3,8 +3,8 @@
 // #include <unordered_map>
 #include <map>
 
-#include <stdml/bits/buffer.hpp>
-#include <stdml/bits/channel.hpp>
+#include <stdml/bits/collective/buffer.hpp>
+#include <stdml/bits/collective/channel.hpp>
 
 namespace stdml::collective
 {

@@ -1,6 +1,6 @@
 #pragma once
-#include <stdml/bits/address.hpp>
-#include <stdml/bits/rchan.hpp>
+#include <stdml/bits/collective/address.hpp>
+#include <stdml/bits/collective/rchan.hpp>
 
 namespace stdml::collective::rchan
 {

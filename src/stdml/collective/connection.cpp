@@ -1,7 +1,7 @@
 // #include <experimental/net>
 
-#include <stdml/bits/connection.hpp>
-#include <stdml/bits/rchan.hpp>
+#include <stdml/bits/collective/connection.hpp>
+#include <stdml/bits/collective/rchan.hpp>
 
 // namespace net = std::experimental::net;
 

@@ -2,7 +2,7 @@
 #include <mutex>
 #include <thread>
 
-#include <stdml/bits/log.hpp>
+#include <stdml/bits/collective/log.hpp>
 
 namespace stdml::collective
 {

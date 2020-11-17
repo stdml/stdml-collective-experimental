@@ -1,13 +1,13 @@
 #include <experimental/net>
 #include <iostream>
 
-#include <stdml/bits/connection.hpp>
-#include <stdml/bits/ioutil.hpp>
-#include <stdml/bits/log.hpp>
-#include <stdml/bits/mailbox.hpp>
-#include <stdml/bits/peer.hpp>
-#include <stdml/bits/rchan.hpp>
-#include <stdml/bits/stat.hpp>
+#include <stdml/bits/collective/connection.hpp>
+#include <stdml/bits/collective/ioutil.hpp>
+#include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/mailbox.hpp>
+#include <stdml/bits/collective/peer.hpp>
+#include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/stat.hpp>
 
 namespace net = std::experimental::net;
 

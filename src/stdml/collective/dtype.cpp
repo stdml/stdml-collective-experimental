@@ -2,7 +2,7 @@
 #include <functional>
 #include <stdexcept>
 
-#include <stdml/bits/dtype.hpp>
+#include <stdml/bits/collective/dtype.hpp>
 
 namespace stdml::collective
 {

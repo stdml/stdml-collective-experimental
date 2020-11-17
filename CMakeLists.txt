@@ -25,7 +25,7 @@ OPTION(BUILD_LIB "Build static lib." ON)
 OPTION(BUILD_SHARED_LIB "Build shared lib." OFF)
 
 IF(BUILD_LIB)
-    FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/*.cpp)
+    FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp)
     ADD_LIBRARY(stdml-collective ${SRCS})
     TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
     TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)

@@ -1,7 +1,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include <stdml/bits/stat.hpp>
+#include <stdml/bits/collective/stat.hpp>
 
 namespace stdml::collective
 {

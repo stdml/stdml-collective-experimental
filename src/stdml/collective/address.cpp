@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 
-#include <stdml/bits/address.hpp>
+#include <stdml/bits/collective/address.hpp>
 
 uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {

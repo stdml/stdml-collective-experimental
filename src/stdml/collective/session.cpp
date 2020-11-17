@@ -7,14 +7,14 @@
 #include <ranges>
 #include <thread>
 
-#include <stdml/bits/affinity.hpp>
-#include <stdml/bits/connection.hpp>
-#include <stdml/bits/execution.hpp>
-#include <stdml/bits/log.hpp>
-#include <stdml/bits/session.hpp>
-#include <stdml/bits/stat.hpp>
-#include <stdml/bits/thread_pool.hpp>
-#include <stdml/bits/topology.hpp>
+#include <stdml/bits/collective/affinity.hpp>
+#include <stdml/bits/collective/connection.hpp>
+#include <stdml/bits/collective/execution.hpp>
+#include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/session.hpp>
+#include <stdml/bits/collective/stat.hpp>
+#include <stdml/bits/collective/thread_pool.hpp>
+#include <stdml/bits/collective/topology.hpp>
 
 namespace stdml::collective
 {

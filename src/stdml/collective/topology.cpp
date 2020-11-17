@@ -1,7 +1,7 @@
 #include <numeric>
 #include <ranges>
 
-#include <stdml/bits/topology.hpp>
+#include <stdml/bits/collective/topology.hpp>
 
 namespace stdml::collective
 {

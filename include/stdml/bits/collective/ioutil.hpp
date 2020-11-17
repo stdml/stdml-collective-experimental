@@ -1,5 +1,5 @@
 #pragma once
-#include <stdml/bits/buffer.hpp>
+#include <stdml/bits/collective/buffer.hpp>
 
 namespace stdml::collective
 {

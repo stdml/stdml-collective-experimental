@@ -3,7 +3,7 @@
 #include <thread>
 #include <vector>
 
-#include <stdml/bits/thread_pool.hpp>
+#include <stdml/bits/collective/thread_pool.hpp>
 
 namespace stdml::collective
 {

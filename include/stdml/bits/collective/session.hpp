@@ -2,13 +2,13 @@
 #include <cstddef>
 #include <iterator>
 
-#include <stdml/bits/address.hpp>
-#include <stdml/bits/buffer.hpp>
-#include <stdml/bits/dtype.hpp>
-#include <stdml/bits/mailbox.hpp>
-#include <stdml/bits/rchan.hpp>
-#include <stdml/bits/thread_pool.hpp>
-#include <stdml/bits/topology.hpp>
+#include <stdml/bits/collective/address.hpp>
+#include <stdml/bits/collective/buffer.hpp>
+#include <stdml/bits/collective/dtype.hpp>
+#include <stdml/bits/collective/mailbox.hpp>
+#include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/thread_pool.hpp>
+#include <stdml/bits/collective/topology.hpp>
 
 namespace stdml::collective
 {

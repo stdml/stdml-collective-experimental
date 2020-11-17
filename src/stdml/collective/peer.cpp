@@ -10,11 +10,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include <stdml/bits/connection.hpp>
-#include <stdml/bits/log.hpp>
-#include <stdml/bits/mailbox.hpp>
-#include <stdml/bits/peer.hpp>
-#include <stdml/bits/rchan.hpp>
+#include <stdml/bits/collective/connection.hpp>
+#include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/mailbox.hpp>
+#include <stdml/bits/collective/peer.hpp>
+#include <stdml/bits/collective/rchan.hpp>
 
 namespace stdml::collective
 {

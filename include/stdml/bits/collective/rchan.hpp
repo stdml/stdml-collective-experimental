@@ -5,7 +5,7 @@
 #include <optional>
 #include <unordered_map>
 
-#include <stdml/bits/mailbox.hpp>
+#include <stdml/bits/collective/mailbox.hpp>
 
 namespace stdml::collective::rchan
 {

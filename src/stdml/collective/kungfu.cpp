@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <unordered_map>
 
-#include <stdml/bits/topology.hpp>
+#include <stdml/bits/collective/topology.hpp>
 
 extern std::string safe_getenv(const char *name);
 

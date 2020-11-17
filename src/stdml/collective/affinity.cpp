@@ -5,8 +5,8 @@
 
 #include <sched.h>
 
-#include <stdml/bits/affinity.hpp>
-#include <stdml/bits/log.hpp>
+#include <stdml/bits/collective/affinity.hpp>
+#include <stdml/bits/collective/log.hpp>
 
 std::string show(const std::vector<int> &arr)
 {

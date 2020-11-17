@@ -4,10 +4,10 @@
 #include <memory>
 #include <unordered_map>
 
-#include <stdml/bits/address.hpp>
-#include <stdml/bits/mailbox.hpp>
-#include <stdml/bits/rchan.hpp>
-#include <stdml/bits/session.hpp>
+#include <stdml/bits/collective/address.hpp>
+#include <stdml/bits/collective/mailbox.hpp>
+#include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/session.hpp>
 
 namespace stdml::collective
 {

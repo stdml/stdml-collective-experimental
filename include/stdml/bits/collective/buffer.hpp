@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include <stdml/bits/dtype.hpp>
+#include <stdml/bits/collective/dtype.hpp>
 
 namespace stdml::collective
 {
