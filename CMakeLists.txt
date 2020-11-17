@@ -1,7 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.15)
 PROJECT(stdml-collective)
 
-SET(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(LIBRARY_OUTPUT_PATH lib)
 
@@ -21,32 +20,16 @@ ENDIF()
 
 INSTALL(DIRECTORY include DESTINATION .)
 
-OPTION(BUILD_LIB "Build static lib." ON)
-OPTION(BUILD_SHARED_LIB "Build shared lib." OFF)
-
-FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp)
-
-IF(BUILD_LIB)
-    ADD_LIBRARY(stdml-collective ${SRCS})
-    TARGET_LINK_LIBRARIES(stdml-collective Threads::Threads)
-    TARGET_COMPILE_OPTIONS(stdml-collective PRIVATE -fcoroutines)
-    INSTALL(TARGETS stdml-collective ARCHIVE DESTINATION lib)
-ENDIF()
-
-IF(BUILD_SHARED)
-    ADD_LIBRARY(stdml-collective-shared SHARED ${SRCS})
-    TARGET_LINK_LIBRARIES(stdml-collective-shared Threads::Threads)
-    TARGET_COMPILE_OPTIONS(stdml-collective-shared PRIVATE -fcoroutines)
-    INSTALL(TARGETS stdml-collective-shared LIBRARY DESTINATION lib)
-    SET_TARGET_PROPERTIES(stdml-collective-shared PROPERTIES OUTPUT_NAME
-                                                             stdml-collective)
-ENDIF()
-
 IF(HAVE_MPI)
     FIND_PACKAGE(MPI REQUIRED)
 ENDIF()
 
+OPTION(BUILD_TESTS "Build tests." OFF)
+
+INCLUDE(cmake/lib.cmake)
 INCLUDE(cmake/examples.cmake)
-INCLUDE(cmake/tests.cmake)
+IF(BUILD_TESTS)
+    INCLUDE(cmake/tests.cmake)
+ENDIF()
 INCLUDE(cmake/benchmarks.cmake)
 INCLUDE(cmake/pack.cmake)

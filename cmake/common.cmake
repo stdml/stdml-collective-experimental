@@ -3,6 +3,7 @@ FUNCTION(ADD_BINARY target)
     STRING(REPLACE "_" "-" name ${name})
     ADD_EXECUTABLE(${name} ${target})
     TARGET_LINK_LIBRARIES(${name} stdml-collective)
+    SET_PROPERTY(TARGET ${name} PROPERTY CXX_STANDARD 20)
 ENDFUNCTION()
 
 FUNCTION(TARGET_USE_MPI target)

@@ -70,6 +70,7 @@ add_cmake_flags() {
     fi
 
     add_cmake_flag BUILD_SHARED $BUILD_SHARED
+    add_cmake_flag BUILD_TESTS $BUILD_TESTS
     add_cmake_flag DISABLE_CXX11_ABI $DISABLE_CXX11_ABI
     add_cmake_flag HAVE_MPI $HAVE_MPI
 

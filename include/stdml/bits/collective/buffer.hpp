@@ -44,7 +44,8 @@ std::vector<interval<T>> even_partition(const interval<T> &i, T k)
     T off = i.begin;
     for (T j = 0; j < k; ++j) {
         const T size = j < r ? q + 1 : q;
-        ps.emplace_back(off, off + size);
+        // ps.emplace_back(off, off + size);// requires c++20
+        ps.push_back({off, off + size});
         off += size;
     }
     return ps;
