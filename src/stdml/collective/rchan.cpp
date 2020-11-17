@@ -117,8 +117,8 @@ class connection_impl : public connection
             .data = const_cast<void *>(data),
         };
         {
-            STDML_PROFILE_RATE(__func__, msg.len);
             std::lock_guard<std::mutex> _(mu_);
+            STDML_PROFILE_RATE(__func__, msg.len);
             ioutil::write(socket_, mh.name_len);
             ioutil::write(socket_, mh.name, mh.name_len);
             ioutil::write(socket_, mh.flags);
@@ -194,7 +194,6 @@ class client_impl : public client
     {
         auto conn = require(target);
         conn->send(name, data, size, flags);
-        // log(PRINT) << "sent" << size;
     }
 };
 
