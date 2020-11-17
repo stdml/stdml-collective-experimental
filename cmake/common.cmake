@@ -1,12 +1,4 @@
-FUNCTION(ADD_CXX_BINARY target)
-    GET_FILENAME_COMPONENT(name ${target} NAME_WE)
-    STRING(REPLACE "_" "-" name ${name})
-    ADD_EXECUTABLE(${name} ${target})
-    TARGET_LINK_LIBRARIES(${name} stdml-collective)
-    TARGET_COMPILE_OPTIONS(${name} PRIVATE -fcoroutines)
-ENDFUNCTION()
-
-FUNCTION(ADD_C_BINARY target)
+FUNCTION(ADD_BINARY target)
     GET_FILENAME_COMPONENT(name ${target} NAME_WE)
     STRING(REPLACE "_" "-" name ${name})
     ADD_EXECUTABLE(${name} ${target})

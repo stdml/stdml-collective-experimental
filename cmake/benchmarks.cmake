@@ -1,5 +1,5 @@
-ADD_CXX_BINARY(benchmarks/bench_all_reduce.cpp)
-ADD_C_BINARY(benchmarks/bench-mpi-all-reduce.c)
+ADD_BINARY(benchmarks/bench_all_reduce.cpp)
+ADD_BINARY(benchmarks/bench-mpi-all-reduce.c)
 
 IF(HAVE_MPI)
     ADD_EXECUTABLE(bench-mpi-all-reduce-openmpi
