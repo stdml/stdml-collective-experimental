@@ -41,7 +41,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    - run: ./configure --release=0.0.0 --deb --shared --disable-cxx11-abi
+    - run: ./configure --release=$(git rev-parse --short HEAD) --deb --shared --disable-cxx11-abi
     - run: make
     - run: make package
 
