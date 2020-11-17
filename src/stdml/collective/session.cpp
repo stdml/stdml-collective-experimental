@@ -54,7 +54,6 @@ class workspace_state
 
     const void *effective_data()
     {
-        std::lock_guard<std::mutex> _(mu_);  //
         if (recv_count_ > 0) {
             return w->recv;
         } else {
@@ -64,8 +63,8 @@ class workspace_state
 
     void add_to(const void *data)
     {
-        const void *ptr = effective_data();
         std::lock_guard<std::mutex> _(mu_);
+        const void *ptr = effective_data();
         STDML_PROFILE_RATE(__func__, w->count * 4);
         reduce(w->recv, data, ptr, w->count, w->dt, w->op);
         ++recv_count_;

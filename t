@@ -39,4 +39,9 @@ test_all() {
 }
 
 rebuild
+
+export STDML_USE_THREAD_POOL=0
+test_all
+
+export STDML_USE_THREAD_POOL=1
 test_all
