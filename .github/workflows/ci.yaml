@@ -13,7 +13,7 @@ jobs:
 
     - run: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
 
-    - run: ./configure
+    - run: ./configure --tests
     - run: make
     - run: |
         export GOBIN=$HOME/go/bin
