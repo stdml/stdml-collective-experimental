@@ -384,9 +384,9 @@ class server_impl : public server
 
   public:
     server_impl(const peer_id self, handler_impl *handler)
-        : ctx_(std::thread::hardware_concurrency()),
-          self_(self),
+        : self_(self),
           handler_(handler),
+          ctx_(std::thread::hardware_concurrency()),
           acceptor_(ctx_)
     {
     }

@@ -47,7 +47,7 @@ struct sort_set {
     {
         std::vector<T> v(s.size());
         std::copy(s.begin(), s.end(), v.begin());
-        return std::move(v);
+        return v;
     }
 };
 

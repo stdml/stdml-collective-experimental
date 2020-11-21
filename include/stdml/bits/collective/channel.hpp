@@ -8,7 +8,7 @@ namespace stdml::collective
 template <typename T>
 class channel
 {
-    const int cap;
+    const size_t cap;
 
     std::mutex mu;
     std::queue<T> buffer;
@@ -16,7 +16,7 @@ class channel
     std::condition_variable cv;
 
   public:
-    channel(int cap = 1) : cap(cap) {}
+    channel(size_t cap = 1) : cap(cap) {}
 
     T get()
     {
@@ -25,7 +25,7 @@ class channel
         T x = std::move(buffer.front());
         buffer.pop();
         cv.notify_one();
-        return std::move(x);
+        return x;
     }
 
     void put(T x)

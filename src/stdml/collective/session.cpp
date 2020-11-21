@@ -101,7 +101,7 @@ struct recv {
         } else {
             slotbox::S *s = sess->slotbox_->require(id, (*state)->name);
             s->waitQ.put((*state)->recv);
-            void *ptr = s->recvQ.get();
+            void *ptr [[gnu::unused]] = s->recvQ.get();
             assert(ptr == (*state)->recv);
         }
     }
@@ -114,7 +114,7 @@ struct send {
     const bool reduce;
 
     send(const session *sess, workspace_state *w, bool reduce)
-        : sess(sess), state(state), reduce(reduce)
+        : sess(sess), state(w), reduce(reduce)
     {
     }
 

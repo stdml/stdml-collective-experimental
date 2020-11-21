@@ -94,6 +94,6 @@ session peer::join()
 {
     session sess(self_, init_peers_, mailbox_.get(), slotbox_.get(),
                  client_pool_.get(), init_strategy_);
-    return std::move(sess);
+    return sess;
 }
 }  // namespace stdml::collective

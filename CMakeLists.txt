@@ -6,6 +6,7 @@ SET(LIBRARY_OUTPUT_PATH lib)
 
 FIND_PACKAGE(Threads REQUIRED)
 INCLUDE(cmake/common.cmake)
+INCLUDE(cmake/strict.cmake)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 

@@ -115,7 +115,7 @@ class thread_pool_impl : public thread_pool
     thread_pool_impl(int n = std::thread::hardware_concurrency())
     {
         ths_.reserve(n);
-        for (auto i : std::views::iota(0, n)) { add_worker(); }
+        for (auto _ [[gnu::unused]] : std::views::iota(0, n)) { add_worker(); }
     }
 
     ~thread_pool_impl()
@@ -124,7 +124,7 @@ class thread_pool_impl : public thread_pool
             std::lock_guard<std::mutex> _(mu);
             s.stop();
         }
-        for (const auto &_ : ths_) { sema.put_one(); }
+        for (const auto &_ [[gnu::unused]] : ths_) { sema.put_one(); }
         wait();
         for (auto &th : ths_) { th.join(); }
     }

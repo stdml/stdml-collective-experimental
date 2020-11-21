@@ -53,7 +53,7 @@ void bench_all_reduce_one(stdml::collective::session &session,
     auto t0 = C::now();
     session.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
     auto t1 = C::now();
-    double d = (t1 - t0).count();
+    double d [[gnu::unused]] = (t1 - t0).count();
 }
 
 double bench_step(stdml::collective::session &session,
