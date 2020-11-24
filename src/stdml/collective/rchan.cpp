@@ -1,5 +1,6 @@
 #include <experimental/net>
 #include <iostream>
+#include <thread>
 
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/ioutil.hpp>
@@ -13,21 +14,61 @@ namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
 {
+bool would_block(const std::error_code &ec)
+{
+    return ec.value() == 11;
+}
+
 template <typename Socket>
 class basic_ioutil
 {
   public:
-    static size_t read(Socket &socket, void *ptr, size_t n)
+    static size_t read_b(Socket &socket, void *ptr, size_t n)
     {
         size_t got = 0;
         while (n > 0) {
             auto m = socket.read_some(net::buffer(ptr, n));
-            if (m == 0) { break; }
+            if (m == 0) {
+                break;
+            }
             got += m;
             n -= m;
             ptr = (char *)(ptr) + m;
         }
         return got;
+    }
+
+    static size_t read_nb(Socket &socket, void *ptr, size_t n)
+    {
+        size_t got = 0;
+        while (n > 0) {
+            std::error_code ec;
+            auto m = socket.read_some(net::buffer(ptr, n), ec);
+            if (ec) {
+                if (would_block(ec)) {
+                    std::this_thread::yield();
+                    continue;
+                } else {
+                    throw ec;
+                }
+            }
+            if (m == 0) {
+                break;
+            }
+            got += m;
+            n -= m;
+            ptr = (char *)(ptr) + m;
+        }
+        return got;
+    }
+
+    static size_t read(Socket &socket, void *ptr, size_t n)
+    {
+        // if (socket.native_non_blocking()) {
+        //     return read_nb(socket, ptr, n);
+        // } else {
+        return read_b(socket, ptr, n);
+        // }
     }
 
     template <typename T>
@@ -41,7 +82,9 @@ class basic_ioutil
         size_t sent = 0;
         while (n > 0) {
             auto m = socket.write_some(net::buffer(ptr, n));
-            if (m == 0) { break; }
+            if (m == 0) {
+                break;
+            }
             sent += m;
             n -= m;
             ptr = (char *)(ptr) + m;
@@ -102,7 +145,10 @@ class connection_impl : public connection
         log() << "upgraded to" << remote << "@" << type;
     }
 
-    ~connection_impl() { socket_.close(); }
+    ~connection_impl()
+    {
+        socket_.close();
+    }
 
     void send(const char *name, const void *data, size_t size,
               uint32_t flags) override
@@ -142,13 +188,17 @@ class message_reader_impl : public message_reader
     uint32_t len_;
 
   public:
-    message_reader_impl(tcp_socket *socket) : socket_(socket), len_(0) {}
+    message_reader_impl(tcp_socket *socket) : socket_(socket), len_(0)
+    {
+    }
 
     std::optional<received_header> read_header() override
     {
         received_header hdr;
         auto n = ioutil::read(*socket_, hdr.name_len);
-        if (n == 0) { return {}; }
+        if (n == 0) {
+            return {};
+        }
         hdr.name.resize(hdr.name_len);
         ioutil::read(*socket_, hdr.name.data(), hdr.name_len);
         ioutil::read(*socket_, hdr.flags);
@@ -177,7 +227,9 @@ class client_impl : public client
     {
         std::lock_guard<std::mutex> _(mu_);
         auto it = pool_.find(target.hash());
-        if (it != pool_.end()) { return it->second.get(); }
+        if (it != pool_.end()) {
+            return it->second.get();
+        }
         auto conn = connection::dial(target, type_, self_);  // FIXME: unblock
         pool_[target.hash()].reset(conn);
         return conn;
@@ -218,7 +270,9 @@ class default_msg_handler_impl : public msg_handler
         tcp_socket &socket = *(reinterpret_cast<tcp_socket *>(_socket));
         message_reader_impl reader(&socket);
         auto mh = reader.read_header();
-        if (!mh.has_value()) { return false; }
+        if (!mh.has_value()) {
+            return false;
+        }
         buffer b = alloc_buffer(mh->len);
         reader.read_body(b.data.get());
         return true;
@@ -237,7 +291,9 @@ class msg_handler_impl<conn_collective> : public msg_handler
     slotbox *slotbox_;
 
   public:
-    msg_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb) {}
+    msg_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
+    {
+    }
 
     bool operator()(const peer_id &src, void *_socket) override
     {
@@ -245,7 +301,9 @@ class msg_handler_impl<conn_collective> : public msg_handler
         message_reader_impl reader(&socket);
 
         auto mh = reader.read_header();
-        if (!mh.has_value()) { return false; }
+        if (!mh.has_value()) {
+            return false;
+        }
 
         if (mh->flags & rchan::message_header::wait_recv_buf) {
             slotbox::S *s = slotbox_->require(src, mh->name);
@@ -280,14 +338,19 @@ class handler_impl : public handler
 
     size_t operator()(const peer_id src, conn_type type, tcp_socket socket)
     {
+        // socket.native_non_blocking(true);
         default_msg_handler_impl hh;
         msg_handler *h = &hh;
         auto &handler = msg_handlers_.at(type);
-        if (handler.get()) { h = handler.get(); }
+        if (handler.get()) {
+            h = handler.get();
+        }
         int i = 0;
         for (;; ++i) {
             const bool ok = (*h)(src, &socket);
-            if (!ok) { break; }
+            if (!ok) {
+                break;
+            }
         }
         socket.close();
         return i;
@@ -414,7 +477,9 @@ class server_impl : public server
             ctx_.stop();
             thread_->join();  //
             log() << "serving thread joined.";
-            for (auto &th : handle_threads_) { th.join(); }
+            for (auto &th : handle_threads_) {
+                th.join();
+            }
             log() << "all" << handle_threads_.size()
                   << "handling threads joined.";
         }
