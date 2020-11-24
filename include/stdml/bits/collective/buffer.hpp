@@ -1,8 +1,11 @@
 #pragma once
+#include <cstring>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <stdml/bits/collective/dtype.hpp>
+#include <stdml/bits/collective/stat.hpp>
 
 namespace stdml::collective
 {
@@ -85,5 +88,47 @@ struct workspace {
         }
         return ws;
     }
+};
+
+class workspace_state
+{
+    std::mutex mu_;
+
+    const workspace *w;
+    uint32_t recv_count_;
+
+  public:
+    workspace_state(const workspace *w) : w(w), recv_count_(0) {}
+
+    const workspace *operator->() const { return w; }
+
+    const void *effective_data()
+    {
+        if (recv_count_ > 0) {
+            return w->recv;
+        } else {
+            return w->send;
+        }
+    }
+
+    void add_to(const void *data)
+    {
+        std::lock_guard<std::mutex> _(mu_);
+        const void *ptr = effective_data();
+        STDML_PROFILE_RATE(__func__, w->count * 4);
+        reduce(w->recv, data, ptr, w->count, w->dt, w->op);
+        ++recv_count_;
+    }
+
+    void replace(const void *data)
+    {
+        std::lock_guard<std::mutex> _(mu_);
+        std::memcpy(w->recv, data, w->data_size());
+        ++recv_count_;
+    }
+
+    void forward() { std::memcpy(w->recv, w->send, w->data_size()); }
+
+    uint32_t recv_count() const { return recv_count_; }
 };
 }  // namespace stdml::collective

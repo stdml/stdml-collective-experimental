@@ -21,10 +21,6 @@ class session
 
     graph_pair_list all_reduce_topo_;
 
-    void run_graphs(const workspace &w, const std::vector<const graph *> &gs);
-    size_t run_graph_pair_list(const workspace &w, const graph_pair_list &gps,
-                               size_t chunk_size = 1 << 20);
-
     void barrier();
     void _ring_handshake();
 
@@ -40,6 +36,10 @@ class session
     size_t rank() { return rank_; }
 
     size_t size() { return peers_.size(); }
+
+    const peer_list &peers() const { return peers_; }
+
+    sync::thread_pool *pool() const { return pool_.get(); }
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
                     reduce_op op, const std::string &name = "");
