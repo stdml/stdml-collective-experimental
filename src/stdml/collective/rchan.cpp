@@ -10,103 +10,13 @@
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 
-namespace net = std::experimental::net;
-
 namespace stdml::collective::rchan
 {
-bool would_block(const std::error_code &ec)
-{
-    return ec.value() == 11;
-}
-
-template <typename Socket>
-class basic_ioutil
-{
-  public:
-    static size_t read_b(Socket &socket, void *ptr, size_t n)
-    {
-        size_t got = 0;
-        while (n > 0) {
-            auto m = socket.read_some(net::buffer(ptr, n));
-            if (m == 0) {
-                // FIXME: check unexpected EOF
-                break;
-            }
-            got += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
-        return got;
-    }
-
-    static size_t read_nb(Socket &socket, void *ptr, size_t n)
-    {
-        size_t got = 0;
-        while (n > 0) {
-            std::error_code ec;
-            auto m = socket.read_some(net::buffer(ptr, n), ec);
-            if (ec) {
-                if (would_block(ec)) {
-                    std::this_thread::yield();
-                    continue;
-                } else {
-                    throw ec;
-                }
-            }
-            if (m == 0) {
-                // FIXME: check unexpected EOF
-                break;
-            }
-            got += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
-        return got;
-    }
-
-    static size_t read(Socket &socket, void *ptr, size_t n)
-    {
-        // if (socket.native_non_blocking()) {
-        //     return read_nb(socket, ptr, n);
-        // } else {
-        return read_b(socket, ptr, n);
-        // }
-    }
-
-    template <typename T>
-    static size_t read(Socket &socket, T &t)
-    {
-        return read(socket, &t, sizeof(T));
-    }
-
-    static size_t write(Socket &socket, const void *ptr, size_t n)
-    {
-        size_t sent = 0;
-        while (n > 0) {
-            auto m = socket.write_some(net::buffer(ptr, n));
-            if (m == 0) {
-                break;
-            }
-            sent += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
-        return sent;
-    }
-
-    template <typename T>
-    static size_t write(Socket &socket, const T &t)
-    {
-        return write(socket, &t, sizeof(T));
-    }
-};
-
-using ioutil = basic_ioutil<net::ip::tcp::socket>;
-
 class connection_impl : public connection
 {
     using tcp_endpoint = net::ip::tcp::endpoint;
     using tcp_socket = net::ip::tcp::socket;
+    using ioutil = basic_ioutil<tcp_socket>;
 
     std::mutex mu_;
     net::io_context ctx_;
@@ -185,6 +95,7 @@ connection *connection::dial(const peer_id remote, const rchan::conn_type type,
 class message_reader_impl : public message_reader
 {
     using tcp_socket = net::ip::tcp::socket;
+    using ioutil = basic_ioutil<tcp_socket>;
 
     tcp_socket *socket_;
     uint32_t len_;

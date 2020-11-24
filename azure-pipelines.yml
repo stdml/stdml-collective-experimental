@@ -35,3 +35,14 @@ jobs:
 
 #   - script: docker build .
 #     displayName: Build
+
+- job: release
+  steps:
+  - script: ./configure --release=$(git rev-parse --short HEAD) --deb --shared --disable-cxx11-abi
+    displayName: Configure
+
+  - script: make -j $(nproc) package
+    displayName: Build
+
+  - script: echo TODO
+    displayName: Upload
