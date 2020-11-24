@@ -13,6 +13,7 @@
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/session.hpp>
 #include <stdml/bits/collective/stat.hpp>
+#include <stdml/bits/collective/task.hpp>
 #include <stdml/bits/collective/thread_pool.hpp>
 #include <stdml/bits/collective/topology.hpp>
 
