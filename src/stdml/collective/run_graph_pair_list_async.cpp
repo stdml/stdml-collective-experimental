@@ -4,9 +4,42 @@
 
 #include <stdml/bits/collective/execution.hpp>
 #include <stdml/bits/collective/session.hpp>
+#include <stdml/bits/collective/task.hpp>
 
 namespace stdml::collective
 {
+class recv_onto : public task
+{
+  public:
+    void poll() override {}
+
+    bool finished() override { return true; }
+};
+
+class recv_into : public task
+{
+  public:
+    void poll() override {}
+
+    bool finished() override { return true; }
+};
+
+class send_onto : public task
+{
+  public:
+    void poll() override {}
+
+    bool finished() override { return true; }
+};
+
+class send_into : public task
+{
+  public:
+    void poll() override {}
+
+    bool finished() override { return true; }
+};
+
 struct recv {
     const session *sess;
     workspace_state *state;
@@ -17,19 +50,7 @@ struct recv {
     {
     }
 
-    void operator()(const peer_id &id) const
-    {
-        if (reduce) {
-            mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
-            auto b = q->get();
-            state->add_to(b.data.get());
-        } else {
-            slotbox::S *s = sess->slotbox_->require(id, (*state)->name);
-            s->waitQ.put((*state)->recv);
-            void *ptr [[gnu::unused]] = s->recvQ.get();
-            assert(ptr == (*state)->recv);
-        }
-    }
+    task *operator()(const peer_id &id) const { return new noop_task(); }
 };
 
 struct send {
@@ -43,40 +64,34 @@ struct send {
     {
     }
 
-    void operator()(const peer_id &id) const
-    {
-        uint32_t flags = 0;
-        if (!reduce) { flags |= rchan::message_header::wait_recv_buf; };
-        auto client = sess->client_pool_->require(rchan::conn_collective);
-        client->send(id, (*state)->name.c_str(), state->effective_data(),
-                     (*state)->data_size(), flags);
-    }
+    task *operator()(const peer_id &id) const { return new noop_task(); }
 };
 
-void run_graphs(session *sess, const workspace &w,
-                const std::vector<const graph *> &gs)
+task *run_graphs(session *sess, const workspace &w,
+                 const std::vector<const graph *> &gs)
 {
     const auto &peers = sess->peers();
     auto rank = sess->rank();
-    auto par = sess->pool();
-    auto seq = std::execution::seq;
 
     workspace_state state(&w);
+    task_builder steps;
     for (const auto g : gs) {
         const auto prevs = peers[g->prevs(rank)];
         const auto nexts = peers[g->nexts(rank)];
         if (g->self_loop(rank)) {
-            fmap(par, recv(sess, &state, true), prevs);
-            fmap(par, send(sess, &state, true), nexts);
+            steps << task::par(task::fmap(recv(sess, &state, true), prevs));
+            steps << task::par(task::fmap(send(sess, &state, true), nexts));
         } else {
             if (prevs.size() == 0 && state.recv_count() == 0) {
-                state.forward();
+                steps << new simple_task([&] { state.forward(); });
             } else {
-                fmap(seq, recv(sess, &state, false), prevs);
+                steps << task::seq(
+                    task::fmap(recv(sess, &state, false), prevs));
             }
-            fmap(par, send(sess, &state, false), nexts);
+            steps << task::par(task::fmap(send(sess, &state, false), nexts));
         }
     }
+    return steps.seq();
 }
 
 template <typename T>
@@ -100,10 +115,11 @@ size_t run_graph_pair_list_async(session *sess, const workspace &w,
     const auto f = [&](size_t i) {
         const size_t j = name_based_hash(i, ws[i].name);
         const auto &[g0, g1] = gps.choose(j);
-        run_graphs(sess, ws[i], {g0, g1});
+        return run_graphs(sess, ws[i], {g0, g1});
     };
-    // don't use thread pool here
-    fmap(std::execution::par, f, std::views::iota((size_t)0, ws.size()));
+    auto t = task::par(task::fmap(f, std::views::iota((size_t)0, ws.size())));
+    t->finish();
+    delete t;
     return k;
 }
 }  // namespace stdml::collective
