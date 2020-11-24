@@ -60,7 +60,7 @@ using ioutil = basic_ioutil<net::ip::tcp::socket>;
 
 class connection_impl : public connection
 {
-    using tcp_endpoint = net::ip::basic_endpoint<net::ip::tcp>;
+    using tcp_endpoint = net::ip::tcp::endpoint;
     using tcp_socket = net::ip::tcp::socket;
 
     std::mutex mu_;
@@ -301,7 +301,7 @@ handler *handler::New(mailbox *mb, slotbox *sb)
 
 class server_impl : public server
 {
-    using tcp_endpoint = net::ip::basic_endpoint<net::ip::tcp>;
+    using tcp_endpoint = net::ip::tcp::endpoint;
     using tcp_socket = net::ip::tcp::socket;
     using tcp_acceptor = net::ip::tcp::acceptor;
 
