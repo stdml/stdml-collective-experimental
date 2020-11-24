@@ -16,7 +16,7 @@ jobs:
   - script: ./configure --tests
     displayName: Configure
 
-  - script: make
+  - script: make -j $(nproc)
     displayName: Build
 
   - script: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
@@ -30,8 +30,8 @@ jobs:
       ./t
     displayName: Test
 
-- job: docker
-  steps:
+# - job: docker
+#   steps:
 
-  - script: docker build .
-    displayName: Build
+#   - script: docker build .
+#     displayName: Build
