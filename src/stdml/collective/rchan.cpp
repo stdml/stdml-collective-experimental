@@ -97,9 +97,9 @@ class connection_impl : public connection
             .src_port = local.port,
             .src_ipv4 = local.ipv4,
         };
-        log() << "connected to" << (std::string)remote;
+        log() << "connected to" << remote;
         socket_.write_some(net::buffer(&h, sizeof(h)));
-        log() << "upgraded to" << (std::string)remote << "@" << type;
+        log() << "upgraded to" << remote << "@" << type;
     }
 
     ~connection_impl() { socket_.close(); }
