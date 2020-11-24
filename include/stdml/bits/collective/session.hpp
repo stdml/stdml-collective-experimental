@@ -97,4 +97,10 @@ class session
         broadcast(begin1, begin2, count, type<R>());
     }
 };
+
+size_t run_graph_pair_list(session *sess, const workspace &w,
+                           const graph_pair_list &gps, size_t chunk_size);
+
+size_t run_graph_pair_list_async(session *sess, const workspace &w,
+                                 const graph_pair_list &gps, size_t chunk_size);
 }  // namespace stdml::collective

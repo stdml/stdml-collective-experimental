@@ -41,10 +41,6 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
     barrier();
 }
 
-extern size_t run_graph_pair_list(session *sess, const workspace &w,
-                                  const graph_pair_list &gps,
-                                  size_t chunk_size);
-
 void session::all_reduce(const void *input, void *output, size_t count,
                          dtype dt, reduce_op op, const std::string &name)
 {
@@ -56,7 +52,9 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .op = op,
         .name = name,
     };
-    run_graph_pair_list(this, w, all_reduce_topo_, 1 << 20);
+    constexpr bool async = false;
+    const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
+    f(this, w, all_reduce_topo_, 1 << 20);
 }
 
 void session::barrier()
