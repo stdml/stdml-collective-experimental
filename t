@@ -49,5 +49,5 @@ trace test_all 16
 export STDML_USE_THREAD_POOL=1
 trace test_all 16
 
-export STDML_COLLECTIVE_USE_ASYNC=1
-trace test_all 16
+# export STDML_COLLECTIVE_USE_ASYNC=1
+# trace test_all 16
