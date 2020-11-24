@@ -35,7 +35,10 @@ struct interval {
     T begin;
     T end;
 
-    T len() const { return end - begin; }
+    T len() const
+    {
+        return end - begin;
+    }
 };
 
 template <typename T>
@@ -62,19 +65,22 @@ struct workspace {
     reduce_op op;
     std::string name;
 
-    size_t data_size() const { return count * dtype_size(dt); }
+    size_t data_size() const
+    {
+        return count * dtype_size(dt);
+    }
 
     workspace slice(size_t i, size_t j) const
     {
         const size_t s = dtype_size(dt);
         return {
-            send : (char *)send + i * s,
-            recv : (char *)recv + i * s,
-            count : j - i,
-            dt : dt,
-            op : op,
-            name : "part::" + name + "[" + std::to_string(i) + ":" +
-                std::to_string(j) + "]",
+            .send = (char *)send + i * s,
+            .recv = (char *)recv + i * s,
+            .count = j - i,
+            .dt = dt,
+            .op = op,
+            .name = "part::" + name + "[" + std::to_string(i) + ":" +
+                    std::to_string(j) + "]",
         };
     }
 
@@ -98,9 +104,14 @@ class workspace_state
     uint32_t recv_count_;
 
   public:
-    workspace_state(const workspace *w) : w(w), recv_count_(0) {}
+    workspace_state(const workspace *w) : w(w), recv_count_(0)
+    {
+    }
 
-    const workspace *operator->() const { return w; }
+    const workspace *operator->() const
+    {
+        return w;
+    }
 
     const void *effective_data()
     {
@@ -127,8 +138,14 @@ class workspace_state
         ++recv_count_;
     }
 
-    void forward() { std::memcpy(w->recv, w->send, w->data_size()); }
+    void forward()
+    {
+        std::memcpy(w->recv, w->send, w->data_size());
+    }
 
-    uint32_t recv_count() const { return recv_count_; }
+    uint32_t recv_count() const
+    {
+        return recv_count_;
+    }
 };
 }  // namespace stdml::collective
