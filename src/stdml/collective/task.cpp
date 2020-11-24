@@ -1,12 +1,15 @@
 #include <ranges>
 
+// #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/task.hpp>
 
 namespace stdml::collective
 {
 void task::finish()
 {
-    while (!finished()) { poll(); }
+    while (!finished()) {
+        poll();
+    }
 }
 
 task *task::par(std::vector<std::unique_ptr<task>> tasks)
@@ -19,16 +22,24 @@ task *task::seq(std::vector<std::unique_ptr<task>> tasks)
     return new sequence_tasks(std::move(tasks));
 }
 
-simple_task::simple_task(std::function<void()> f) : f_(f), finished_(false) {}
+simple_task::simple_task(std::function<void()> f) : f_(f), finished_(false)
+{
+}
 
 void simple_task::poll()
 {
-    if (finished_) { return; }
+    // log() << "simple_task" << __func__;
+    if (finished_) {
+        return;
+    }
     f_();
     finished_ = true;
 }
 
-bool simple_task::finished() { return finished_; }
+bool simple_task::finished()
+{
+    return finished_;
+}
 
 sequence_tasks::sequence_tasks(std::vector<std::unique_ptr<task>> tasks)
     : tasks_(std::move(tasks)), finished_(0)
@@ -37,12 +48,20 @@ sequence_tasks::sequence_tasks(std::vector<std::unique_ptr<task>> tasks)
 
 void sequence_tasks::poll()
 {
-    if (finished_ >= tasks_.size()) { return; }
+    // log() << "sequence_tasks" << __func__;
+    if (finished_ >= tasks_.size()) {
+        return;
+    }
     tasks_[finished_]->poll();
-    if (tasks_[finished_]->finished()) { ++finished_; }
+    if (tasks_[finished_]->finished()) {
+        ++finished_;
+    }
 }
 
-bool sequence_tasks::finished() { return finished_ == tasks_.size(); }
+bool sequence_tasks::finished()
+{
+    return finished_ == tasks_.size();
+}
 
 parallel_tasks::parallel_tasks(std::vector<std::unique_ptr<task>> tasks)
     : finished_(tasks.size()), running_(tasks.size()), tasks_(std::move(tasks))
@@ -52,9 +71,14 @@ parallel_tasks::parallel_tasks(std::vector<std::unique_ptr<task>> tasks)
 
 void parallel_tasks::poll()
 {
-    if (running_ <= 0) { return; }
+    // log() << "parallel_tasks" << __func__;
+    if (running_ <= 0) {
+        return;
+    }
     for (auto i : std::views::iota((size_t)0, tasks_.size())) {
-        if (finished_[i]) { continue; }
+        if (finished_[i]) {
+            continue;
+        }
         tasks_[i]->poll();
         if (tasks_[i]->finished()) {
             finished_[i] = true;
@@ -63,5 +87,8 @@ void parallel_tasks::poll()
     }
 }
 
-bool parallel_tasks::finished() { return running_ == 0; }
+bool parallel_tasks::finished()
+{
+    return running_ == 0;
+}
 }  // namespace stdml::collective

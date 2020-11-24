@@ -1,4 +1,5 @@
 ADD_BINARY(examples/example-1.cpp)
+ADD_BINARY(examples/example-task.cpp)
 ADD_BINARY(examples/example-mpi.c)
 
 IF(HAVE_MPI)

@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
+export STDML_ENABLE_LOG=0
+
 rebuild() {
-    ./configure
+    ./configure --tests
     make -j 8
 }
 
@@ -38,10 +40,13 @@ test_all() {
     done
 }
 
-rebuild
+trace rebuild
 
 export STDML_USE_THREAD_POOL=0
-test_all
+trace test_all
 
 export STDML_USE_THREAD_POOL=1
-test_all
+trace test_all
+
+export STDML_COLLECTIVE_USE_ASYNC=1
+trace test_all

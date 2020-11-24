@@ -51,7 +51,8 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .op = op,
         .name = name,
     };
-    constexpr bool async = false;
+    bool async = parse_env_bool("STDML_COLLECTIVE_USE_ASYNC");
+    // log() << __func__ << "using async" << async;
     const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
     f(this, w, all_reduce_topo_, 1 << 20);
 }

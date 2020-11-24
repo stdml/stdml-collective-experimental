@@ -10,7 +10,9 @@ extern bool parse_env_bool(const std::string &s);
 
 bool log_enabled()
 {
-    if (parse_env_bool("STDML_ENABLE_LOG")) { return true; }
+    if (parse_env_bool("STDML_ENABLE_LOG")) {
+        return true;
+    }
     return false;
 }
 
@@ -19,17 +21,29 @@ bool logger::enabled_ = log_enabled();
 
 logger::logger(std::ostream &os) : lk_(mu_), os(os)
 {
-    if (enabled_) { os << "[D] " << std::this_thread::get_id(); }
+    if (enabled_) {
+        os << std::boolalpha;
+        os << "[D] " << std::this_thread::get_id();
+    }
 }
 
 logger::~logger()
 {
-    if (enabled_) { os << std::endl; }
+    if (enabled_) {
+        os << std::endl;
+    }
 }
 
 logger log(log_level level)
 {
-    if (level == PRINT) { return logger(std::cout); }
+    if (level == PRINT) {
+        return logger(std::cout);
+    }
     return logger(std::cerr);
+}
+
+void enabled_log()
+{
+    logger::enabled_ = true;
 }
 }  // namespace stdml::collective

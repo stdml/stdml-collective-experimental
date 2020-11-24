@@ -7,12 +7,13 @@ namespace stdml::collective
 class logger
 {
     static std::mutex mu_;
-    static bool enabled_;
 
     std::lock_guard<std::mutex> lk_;
     std::ostream &os;
 
   public:
+    static bool enabled_;
+
     logger(std::ostream &os);
 
     ~logger();
@@ -20,7 +21,9 @@ class logger
     template <typename T>
     logger &operator<<(const T &x)
     {
-        if (enabled_) { os << " " << x; }
+        if (enabled_) {
+            os << " " << x;
+        }
         return *this;
     }
 };
@@ -41,4 +44,5 @@ enum log_level {
 };
 
 logger log(log_level level = INFO);
+extern void enabled_log();
 }  // namespace stdml::collective
