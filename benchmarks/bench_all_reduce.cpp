@@ -26,12 +26,25 @@ double gigabytes(size_t n)
     return n / gi;
 }
 
+std::string show_rate(double gibps)
+{
+    char line[64];
+    if (gibps >= 1) {
+        sprintf(line, "%.3f GiB/s", gibps);
+    } else {
+        sprintf(line, "%.3f GiB/s (%.3f MiB/s)", gibps, gibps * 1024);
+    }
+    return line;
+}
+
 template <typename T>
 void pprint(const std::vector<T> &xs)
 {
     int i = 0;
     for (const T &x : xs) {
-        if (i++) { std::cout << ", "; }
+        if (i++) {
+            std::cout << ", ";
+        }
         std::cout << x;
     }
     std::cout << std::endl;
@@ -74,9 +87,13 @@ std::vector<size_t> read_int_list(const char *filename)
 {
     std::vector<size_t> sizes;
     std::ifstream fs(filename);
-    if (!fs.is_open()) { throw std::runtime_error("file not found"); }
+    if (!fs.is_open()) {
+        throw std::runtime_error("file not found");
+    }
     size_t size;
-    while (fs >> size) { sizes.push_back(size); }
+    while (fs >> size) {
+        sizes.push_back(size);
+    }
     return sizes;
 }
 
@@ -85,7 +102,7 @@ using stdml::collective::PRINT;
 
 void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
 {
-    pprint(sizes);
+    // pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
     log(PRINT) << sizes.size() << "tensors";
     log(PRINT) << "total size" << tot * 4 <<  //
@@ -113,9 +130,10 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
         auto d = bench_step(session, buffers);
         double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
         metrics.push_back(metric);
-        printf("%.3f GiB/s\n", metric);
+        std::cout << "step " << i + 1 << " " << show_rate(metric) << std::endl;
     }
-    printf("FINAL RESULT: %s %.3f GiB/s\n", name.c_str(), mean(metrics));
+    std::cout << "FINAL RESULT: " << name << " " << show_rate(mean(metrics))
+              << std::endl;
 }
 
 struct options {

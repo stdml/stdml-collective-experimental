@@ -29,6 +29,7 @@ class basic_ioutil
         while (n > 0) {
             auto m = socket.read_some(net::buffer(ptr, n));
             if (m == 0) {
+                // FIXME: check unexpected EOF
                 break;
             }
             got += m;
@@ -53,6 +54,7 @@ class basic_ioutil
                 }
             }
             if (m == 0) {
+                // FIXME: check unexpected EOF
                 break;
             }
             got += m;

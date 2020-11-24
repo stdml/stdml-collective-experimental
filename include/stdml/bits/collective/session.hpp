@@ -7,6 +7,7 @@
 #include <stdml/bits/collective/dtype.hpp>
 #include <stdml/bits/collective/mailbox.hpp>
 #include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/task.hpp>
 #include <stdml/bits/collective/thread_pool.hpp>
 #include <stdml/bits/collective/topology.hpp>
 
@@ -29,17 +30,31 @@ class session
     slotbox *slotbox_;                 // owned by peer
     rchan::client_pool *client_pool_;  // owned by peer
 
+    std::unique_ptr<runtime> runtime_;  // TODO: move to peer
+
     session(const peer_id self, const peer_list peers, mailbox *mailbox,
             slotbox *slotbox, rchan::client_pool *client_pool,
             const strategy s = star);
 
-    size_t rank() { return rank_; }
+    size_t rank()
+    {
+        return rank_;
+    }
 
-    size_t size() { return peers_.size(); }
+    size_t size()
+    {
+        return peers_.size();
+    }
 
-    const peer_list &peers() const { return peers_; }
+    const peer_list &peers() const
+    {
+        return peers_;
+    }
 
-    sync::thread_pool *pool() const { return pool_.get(); }
+    sync::thread_pool *pool() const
+    {
+        return pool_.get();
+    }
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
                     reduce_op op, const std::string &name = "");

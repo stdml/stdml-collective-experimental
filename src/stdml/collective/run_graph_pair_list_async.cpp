@@ -33,8 +33,6 @@ class recv_onto : public collective_task
 
     void poll() override
     {
-        // log() << "recv_onto" << __func__;
-
         if (auto b = q->try_get(); b.has_value()) {
             state->add_to(b->data.get());
             finished_ = true;
@@ -60,8 +58,6 @@ class recv_into : public collective_task
 
     void poll() override
     {
-        // log() << "recv_into" << __func__;
-
         if (auto ptr = s->recvQ.try_get(); ptr.has_value()) {
             assert((*ptr) == (*state)->recv);
             finished_ = true;
@@ -92,13 +88,10 @@ class send_task : public collective_task
 
     void poll() override
     {
-        // log() << "send_task" << __func__;
-
         uint32_t flags = 0;
         if (!reduce) {
             flags |= rchan::message_header::wait_recv_buf;
         }
-        // TODO: make client->send it a task
         client->send(id, (*state)->name.c_str(), state->effective_data(),
                      (*state)->data_size(), flags);
         finished_ = true;
@@ -149,6 +142,7 @@ struct send {
 task *run_graphs_async(session *sess, const workspace *w,
                        const std::vector<const graph *> &gs)
 {
+    auto rt = sess->runtime_.get();
     const auto &peers = sess->peers();
     auto rank = sess->rank();
 
@@ -158,8 +152,8 @@ task *run_graphs_async(session *sess, const workspace *w,
         const auto prevs = peers[g->prevs(rank)];
         const auto nexts = peers[g->nexts(rank)];
         if (g->self_loop(rank)) {
-            steps << task::par(task::fmap(recv(sess, state, true), prevs));
-            steps << task::par(task::fmap(send(sess, state, true), nexts));
+            steps << task::par(task::fmap(recv(sess, state, true), prevs), rt);
+            steps << task::par(task::fmap(send(sess, state, true), nexts), rt);
         } else {
             if (prevs.size() == 0) {
                 steps << new simple_task([=] {
@@ -170,7 +164,7 @@ task *run_graphs_async(session *sess, const workspace *w,
             } else {
                 steps << task::seq(task::fmap(recv(sess, state, false), prevs));
             }
-            steps << task::par(task::fmap(send(sess, state, false), nexts));
+            steps << task::par(task::fmap(send(sess, state, false), nexts), rt);
         }
     }
     steps << new simple_task([=] { delete state; });
@@ -196,7 +190,11 @@ size_t run_graph_pair_list_async(session *sess, const workspace &w,
         const auto &[g0, g1] = gps.choose(j);
         return run_graphs_async(sess, &ws[i], {g0, g1});
     };
-    auto t = task::par(task::fmap(f, std::views::iota((size_t)0, ws.size())));
+    auto t = task::par(task::fmap(f, std::views::iota((size_t)0, ws.size())),
+                       sess->runtime_.get());
+    if (k > 1) {
+        log() << "splitted workspace into" << k << "parts";
+    }
     // log() << __func__ << "task built";
     t->finish();
     // log() << __func__ << "task finished";

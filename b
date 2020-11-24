@@ -7,7 +7,8 @@ build() {
 }
 
 run_all() {
-    ./scripts/bench/1.sh
+    ./scripts/bench/small.sh
+    # ./scripts/bench/1.sh
     # ./scripts/vis/timeline.sh
 }
 

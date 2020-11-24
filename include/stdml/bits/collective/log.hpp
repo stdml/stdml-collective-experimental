@@ -38,9 +38,11 @@ class noop_logger
 };
 
 enum log_level {
-    INFO,
     DEBUG,
+    INFO,
     PRINT,
+    WARN,
+    ERROR,
 };
 
 logger log(log_level level = INFO);
