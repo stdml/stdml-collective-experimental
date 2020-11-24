@@ -10,6 +10,8 @@
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 
+namespace net = std::experimental::net;
+
 namespace stdml::collective::rchan
 {
 class connection_impl : public connection
