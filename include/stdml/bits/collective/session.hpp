@@ -1,6 +1,8 @@
 #pragma once
 #include <cstddef>
+#include <future>
 #include <iterator>
+#include <vector>
 
 #include <stdml/bits/collective/address.hpp>
 #include <stdml/bits/collective/buffer.hpp>
@@ -55,6 +57,9 @@ class session
     {
         return pool_.get();
     }
+
+    void all_reduce(const workspace &w);
+    void group_all_reduce(std::vector<std::future<workspace>> ws);
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
                     reduce_op op, const std::string &name = "");

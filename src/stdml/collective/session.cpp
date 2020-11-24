@@ -41,6 +41,23 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
     barrier();
 }
 
+void session::all_reduce(const workspace &w)
+{
+    bool async = parse_env_bool("STDML_COLLECTIVE_USE_ASYNC");
+    // log() << __func__ << "using async" << async;
+    const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
+    f(this, w, all_reduce_topo_, 1 << 20);
+}
+
+void session::group_all_reduce(std::vector<std::future<workspace>> ws)
+{
+    // TODO: async
+    for (auto &w : ws) {
+        auto w1 = w.get();
+        all_reduce(w1);
+    }
+}
+
 void session::all_reduce(const void *input, void *output, size_t count,
                          dtype dt, reduce_op op, const std::string &name)
 {
@@ -52,10 +69,7 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .op = op,
         .name = name,
     };
-    bool async = parse_env_bool("STDML_COLLECTIVE_USE_ASYNC");
-    // log() << __func__ << "using async" << async;
-    const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
-    f(this, w, all_reduce_topo_, 1 << 20);
+    all_reduce(w);
 }
 
 void session::barrier()
