@@ -8,24 +8,27 @@ trigger:
 - draft
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-20.04'
 
 jobs:
-# - job: native
+- job: native
+  steps:
+  - script: ./configure --tests
+    displayName: Configure
 
-#   continueOnError: true
+  - script: make
+    displayName: Build
 
-#   steps:
+  - script: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    displayName: Get Deps
 
-#   - script: sudo apt install -y g++-10
-#     displayName: Install Deps
+  - script: |
+      export GOBIN=$HOME/go/bin
+      go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+      export PATH=$GOBIN:$PATH
 
-#   - script: g++-10 --version
-#     # g++-10 is already the newest version (10.1.0-2ubuntu1~18.04).
-#     displayName: Check Version
-
-#   - script: make
-#     displayName: Build
+      ./t
+    displayName: Test
 
 - job: docker
   steps:
