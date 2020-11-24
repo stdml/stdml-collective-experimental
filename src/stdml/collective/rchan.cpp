@@ -322,7 +322,7 @@ class msg_handler_impl<conn_collective> : public msg_handler
     }
 };
 
-class handler_impl : public handler
+class conn_handler_impl : public conn_handler
 {
     using tcp_socket = net::ip::tcp::socket;
 
@@ -332,7 +332,7 @@ class handler_impl : public handler
     std::map<conn_type, std::unique_ptr<msg_handler>> msg_handlers_;
 
   public:
-    handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
+    conn_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
     {
         msg_handlers_[conn_collective].reset(
             new msg_handler_impl<conn_collective>(mailbox_, slotbox_));
@@ -359,9 +359,9 @@ class handler_impl : public handler
     }
 };
 
-handler *handler::New(mailbox *mb, slotbox *sb)
+conn_handler *conn_handler::New(mailbox *mb, slotbox *sb)
 {
-    return new handler_impl(mb, sb);
+    return new conn_handler_impl(mb, sb);
 }
 
 class server_impl : public server
@@ -371,7 +371,7 @@ class server_impl : public server
     using tcp_acceptor = net::ip::tcp::acceptor;
 
     const peer_id self_;
-    handler_impl *handler_;
+    conn_handler_impl *handler_;
 
     net::io_context ctx_;
     tcp_acceptor acceptor_;
@@ -448,7 +448,7 @@ class server_impl : public server
     }
 
   public:
-    server_impl(const peer_id self, handler_impl *handler)
+    server_impl(const peer_id self, conn_handler_impl *handler)
         : self_(self),
           handler_(handler),
           ctx_(std::thread::hardware_concurrency()),
@@ -488,8 +488,8 @@ class server_impl : public server
     }
 };
 
-server *server::New(const peer_id self, handler *handler)
+server *server::New(const peer_id self, conn_handler *handler)
 {
-    return new server_impl(self, dynamic_cast<handler_impl *>(handler));
+    return new server_impl(self, dynamic_cast<conn_handler_impl *>(handler));
 }
 }  // namespace stdml::collective::rchan

@@ -18,7 +18,7 @@ class peer
 
     std::unique_ptr<mailbox> mailbox_;
     std::unique_ptr<slotbox> slotbox_;
-    std::unique_ptr<rchan::handler> handler_;
+    std::unique_ptr<rchan::conn_handler> handler_;
 
     // destruct client before server
     std::unique_ptr<rchan::server> server_;

@@ -22,7 +22,10 @@ struct conn_header {
     uint32_t src_ipv4;
 };
 
-inline void _test_conn_header() { static_assert(sizeof(conn_header) == 8); }
+inline void _test_conn_header()
+{
+    static_assert(sizeof(conn_header) == 8);
+}
 
 struct message_header {
     static constexpr uint32_t wait_recv_buf = 1 << 0;
@@ -71,12 +74,12 @@ class msg_handler
     virtual bool operator()(const peer_id &src, void *) = 0;
 };
 
-class handler
+class conn_handler
 {
   public:
-    virtual ~handler() = default;
+    virtual ~conn_handler() = default;
 
-    static handler *New(mailbox *mb, slotbox *sb);
+    static conn_handler *New(mailbox *mb, slotbox *sb);
 };
 
 class client
@@ -96,7 +99,9 @@ class client_pool
     std::unordered_map<conn_type, std::unique_ptr<client>> client_pool_;
 
   public:
-    client_pool(const peer_id self) : self_(self) {}
+    client_pool(const peer_id self) : self_(self)
+    {
+    }
 
     client *require(conn_type type);
 };
@@ -108,6 +113,6 @@ class server
     virtual void stop() = 0;
     virtual ~server() = default;
 
-    static server *New(const peer_id self, handler *handler);
+    static server *New(const peer_id self, conn_handler *handler);
 };
 }  // namespace stdml::collective::rchan
