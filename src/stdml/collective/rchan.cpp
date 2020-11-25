@@ -377,7 +377,7 @@ class server_impl : public server
 
     void start() override
     {
-        log() << "starting server .. ";
+        log() << "starting server ..";
         thread_.reset(new std::thread([this] {  //
             serve(self_);
         }));
@@ -385,10 +385,11 @@ class server_impl : public server
 
     void stop() override
     {
+        log() << "server_impl" << __func__;
         if (thread_.get()) {
             log() << "joining threads ..";
             acceptor_.cancel();
-            log() << "acceptor anceled .";
+            log() << "acceptor anceled.";
             ctx_.stop();
             thread_->join();  //
             log() << "serving thread joined.";

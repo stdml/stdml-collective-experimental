@@ -1,0 +1,22 @@
+# -*- mode: shell -*-
+
+kungfu_run_flags() {
+    local np=$1
+    echo -q
+    echo -logdir logs/stdml-collective
+    echo -H "127.0.0.1:$np"
+    echo -np $np
+}
+
+kungfu_run() {
+    local np=$1
+    shift
+    kungfu-run $(kungfu_run_flags $np) $@
+}
+
+stdml_collective_run_n() {
+    local np=$1
+    shift
+    # TODO: parse args
+    kungfu_run $np $@
+}

@@ -1,3 +1,5 @@
+#include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -21,6 +23,33 @@ namespace stdml::collective
 extern std::string safe_getenv(const char *name);
 extern std::optional<int> parse_env_int(const std::string &s);
 
+static peer *__peer = nullptr;
+
+void __stop_peer()
+{
+    log() << __func__ << "called";
+    __peer->stop();
+}
+
+void __stop_peer_sign_handler(int sig)
+{
+    log() << __func__ << "called with" << strsignal(sig);
+    // using namespace std::chrono_literals;
+    // std::this_thread::sleep_for(10ms);
+    // log() << __func__ << "finished sleep" << strsignal(sig);
+    __peer->stop();
+    log() << __func__ << "finished" << strsignal(sig);  // exit before here
+}
+
+void register_cleanup_handlers(peer *peer)
+{
+    __peer = peer;
+    // std::atexit(__stop_peer);  // doesn't work for Ctrl+C
+    std::signal(SIGINT, __stop_peer_sign_handler);
+    std::signal(SIGKILL, __stop_peer_sign_handler);
+    std::signal(SIGTERM, __stop_peer_sign_handler);
+}
+
 peer::peer(const peer_id self, const peer_list init_peers,
            const strategy init_strategy)
     : self_(self),
@@ -31,6 +60,7 @@ peer::peer(const peer_id self, const peer_list init_peers,
       handler_(rchan::conn_handler::New(mailbox_.get(), slotbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
+    register_cleanup_handlers(this);  // doesn't work
 }
 
 peer peer::single()
@@ -103,9 +133,11 @@ void peer::start()
 
 void peer::stop()
 {
-    log() << "stop peer";
+    log() << "start stop client";
     client_pool_.reset(nullptr);
+    log() << "start stop server";
     server_.reset(nullptr);
+    log() << "finished stop peer";
 }
 
 session peer::join()

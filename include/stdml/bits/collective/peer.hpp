@@ -24,15 +24,15 @@ class peer
     std::unique_ptr<rchan::server> server_;
     std::unique_ptr<rchan::client_pool> client_pool_;  //
 
+    peer(const peer_id self, const peer_list init_peers,
+         const strategy init_strategy = star);
+
   public:
     static peer single();
 
     static peer from_kungfu_env();
     static peer from_ompi_env();
     static peer from_env();
-
-    peer(const peer_id self, const peer_list init_peers,
-         const strategy init_strategy = star);
 
     void start();
     void stop();
