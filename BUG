@@ -1,0 +1,2 @@
+program exits before signal handler finishes
+- https://stackoverflow.com/questions/22134538/python-program-exiting-before-signal-handler-is-finished-running
