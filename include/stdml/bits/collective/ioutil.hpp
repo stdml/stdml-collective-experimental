@@ -5,16 +5,14 @@
 
 namespace stdml::collective
 {
-inline bool would_block(const std::error_code &ec)
-{
-    return ec.value() == 11;
-}
+template <typename Socket, bool non_blocking = false>
+class base_ioutil;
 
 template <typename Socket>
-class basic_ioutil
+class base_ioutil<Socket, false>
 {
   public:
-    static size_t read_b(Socket &socket, void *ptr, size_t n)
+    static size_t read(Socket &socket, void *ptr, size_t n)
     {
         namespace net = std::experimental::net;
         size_t got = 0;
@@ -31,7 +29,33 @@ class basic_ioutil
         return got;
     }
 
-    static size_t read_nb(Socket &socket, void *ptr, size_t n)
+    static size_t write(Socket &socket, const void *ptr, size_t n)
+    {
+        namespace net = std::experimental::net;
+        size_t sent = 0;
+        while (n > 0) {
+            auto m = socket.write_some(net::buffer(ptr, n));
+            if (m == 0) {
+                break;
+            }
+            sent += m;
+            n -= m;
+            ptr = (char *)(ptr) + m;
+        }
+        return sent;
+    }
+};
+
+template <typename Socket>
+class base_ioutil<Socket, true>
+{
+    static bool would_block(const std::error_code &ec)
+    {
+        return ec.value() == 11;
+    }
+
+  public:
+    static size_t read(Socket &socket, void *ptr, size_t n)
     {
         namespace net = std::experimental::net;
         size_t got = 0;
@@ -56,15 +80,15 @@ class basic_ioutil
         }
         return got;
     }
+};
 
-    static size_t read(Socket &socket, void *ptr, size_t n)
-    {
-        // if (socket.native_non_blocking()) {
-        //     return read_nb(socket, ptr, n);
-        // } else {
-        return read_b(socket, ptr, n);
-        // }
-    }
+template <typename Socket, bool non_blocking = false>
+class basic_ioutil : public base_ioutil<Socket, non_blocking>
+{
+    using P = base_ioutil<Socket, non_blocking>;
+
+  public:
+    using P::read;
 
     template <typename T>
     static size_t read(Socket &socket, T &t)
@@ -72,21 +96,7 @@ class basic_ioutil
         return read(socket, &t, sizeof(T));
     }
 
-    static size_t write(Socket &socket, const void *ptr, size_t n)
-    {
-        namespace net = std::experimental::net;
-        size_t sent = 0;
-        while (n > 0) {
-            auto m = socket.write_some(net::buffer(ptr, n));
-            if (m == 0) {
-                break;
-            }
-            sent += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
-        return sent;
-    }
+    using P::write;
 
     template <typename T>
     static size_t write(Socket &socket, const T &t)
