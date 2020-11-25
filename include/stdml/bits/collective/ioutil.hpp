@@ -109,14 +109,14 @@ class base_ioutil<Socket, false>
 };
 
 template <typename Socket, io_type iot>
-class io_task : public task
+class io_exact_task : public task
 {
     Socket &socket_;
     char *ptr_;
     size_t n_;
 
   public:
-    io_task(Socket &socket, void *ptr, size_t n)
+    io_exact_task(Socket &socket, void *ptr, size_t n)
         : socket_(socket), ptr_(reinterpret_cast<char *>(ptr)), n_(n)
     {
     }
@@ -179,14 +179,14 @@ class base_ioutil<Socket, true>
     static std::unique_ptr<task> new_read_task(Socket &socket, void *ptr,
                                                size_t n)
     {
-        return std::make_unique<io_task<Socket, io_read>>(socket, ptr, n);
+        return std::make_unique<io_exact_task<Socket, io_read>>(socket, ptr, n);
     }
 
     static std::unique_ptr<task> new_write_task(Socket &socket, const void *ptr,
                                                 size_t n)
     {
-        return std::make_unique<io_task<Socket, io_write>>(socket, (char *)ptr,
-                                                           n);
+        return std::make_unique<io_exact_task<Socket, io_write>>(
+            socket, (char *)ptr, n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n)
