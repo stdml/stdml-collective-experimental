@@ -2,7 +2,6 @@
 #include <experimental/net>
 #include <type_traits>
 
-#include <stdml/bits/collective/buffer.hpp>
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/task.hpp>
 
