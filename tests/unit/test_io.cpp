@@ -34,8 +34,13 @@ int main()
     log() << "req.size()" << req.size();
 
     socket.native_non_blocking(non_blocking);
-    ioutil::write(socket, req.data(), req.size());
+    {
+        // ioutil::write(socket, req.data(), req.size());
+        auto t = ioutil::new_write_task(socket, req.data(), req.size());
+        t->finish();
+    }
     log() << "sent";
+
     std::string resp;
     resp.resize(400);
     {

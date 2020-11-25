@@ -15,32 +15,78 @@ inline bool would_block(const std::error_code &ec)
 
 inline std::runtime_error unexpected_eof("unexpected EOF");
 
+enum io_type {
+    io_read,
+    io_write,
+};
+
+template <io_type>
+struct io_some;
+
+template <>
+struct io_some<io_read> {
+    template <typename Socket>
+    auto operator()(Socket &sock, char *ptr, size_t n)
+    {
+        namespace net = std::experimental::net;
+        return sock.read_some(net::buffer(ptr, n));
+    }
+
+    template <typename Socket>
+    auto operator()(Socket &sock, char *ptr, size_t n, std::error_code &ec)
+    {
+        namespace net = std::experimental::net;
+        return sock.read_some(net::buffer(ptr, n), ec);
+    }
+};
+
+template <>
+struct io_some<io_write> {
+    template <typename Socket>
+    auto operator()(Socket &sock, const char *ptr, size_t n)
+    {
+        namespace net = std::experimental::net;
+        return sock.write_some(net::buffer(ptr, n));
+    }
+
+    template <typename Socket>
+    auto operator()(Socket &sock, const char *ptr, size_t n,
+                    std::error_code &ec)
+    {
+        namespace net = std::experimental::net;
+        return sock.write_some(net::buffer(ptr, n), ec);
+    }
+};
+
 template <typename Socket, bool non_blocking = false>
 class base_ioutil;
 
 template <typename Socket>
 class base_ioutil<Socket, false>
 {
-  public:
-    static void read(Socket &socket, void *ptr, size_t n)
+    template <io_type iot>
+    static void io_exact(Socket &socket, char *ptr, size_t n)
     {
         namespace net = std::experimental::net;
-        size_t got = 0;
         while (n > 0) {
             auto m = socket.read_some(net::buffer(ptr, n));
             if (m == 0) {
                 throw unexpected_eof;
             }
-            got += m;
             n -= m;
-            ptr = (char *)(ptr) + m;
+            ptr += m;
         }
+    }
+
+  public:
+    static void read(Socket &socket, void *ptr, size_t n)
+    {
+        io_exact<io_read>(socket, (char *)ptr, n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n, std::error_code &ec)
     {
         namespace net = std::experimental::net;
-        size_t got = 0;
         while (n > 0) {
             auto m = socket.read_some(net::buffer(ptr, n), ec);
             if (ec) {
@@ -51,7 +97,6 @@ class base_ioutil<Socket, false>
                 ec.assign(1, std::generic_category());
                 return;
             }
-            got += m;
             n -= m;
             ptr = (char *)(ptr) + m;
         }
@@ -59,29 +104,19 @@ class base_ioutil<Socket, false>
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        namespace net = std::experimental::net;
-        size_t sent = 0;
-        while (n > 0) {
-            auto m = socket.write_some(net::buffer(ptr, n));
-            if (m == 0) {
-                throw unexpected_eof;
-            }
-            sent += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
+        io_exact<io_write>(socket, (char *)ptr, n);
     }
 };
 
-template <typename Socket>
-class read_task : public task
+template <typename Socket, io_type iot>
+class io_task : public task
 {
     Socket &socket_;
     char *ptr_;
     size_t n_;
 
   public:
-    read_task(Socket &socket, void *ptr, size_t n)
+    io_task(Socket &socket, void *ptr, size_t n)
         : socket_(socket), ptr_(reinterpret_cast<char *>(ptr)), n_(n)
     {
     }
@@ -93,7 +128,7 @@ class read_task : public task
             return;
         }
         std::error_code ec;
-        auto m = socket_.read_some(net::buffer(ptr_, n_), ec);
+        auto m = io_some<iot>()(socket_, ptr_, n_, ec);
         if (ec) {
             if (!would_block(ec)) {
                 throw ec;
@@ -117,59 +152,51 @@ class read_task : public task
 template <typename Socket>
 class base_ioutil<Socket, true>
 {
+    template <io_type iot>
+    static void io_exact(Socket &socket, char *ptr, size_t n)
+    {
+        namespace net = std::experimental::net;
+        while (n > 0) {
+            std::error_code ec;
+            auto m = io_some<iot>()(socket, ptr, n, ec);
+            if (ec) {
+                if (would_block(ec)) {
+                    std::this_thread::yield();
+                    continue;
+                } else {
+                    throw ec;
+                }
+            }
+            if (m == 0) {
+                throw unexpected_eof;
+            }
+            n -= m;
+            ptr += m;
+        }
+    }
+
   public:
     static std::unique_ptr<task> new_read_task(Socket &socket, void *ptr,
                                                size_t n)
     {
-        return std::make_unique<read_task<Socket>>(socket, ptr, n);
+        return std::make_unique<io_task<Socket, io_read>>(socket, ptr, n);
+    }
+
+    static std::unique_ptr<task> new_write_task(Socket &socket, const void *ptr,
+                                                size_t n)
+    {
+        return std::make_unique<io_task<Socket, io_write>>(socket, (char *)ptr,
+                                                           n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n)
     {
-        namespace net = std::experimental::net;
-        size_t got = 0;
-        while (n > 0) {
-            std::error_code ec;
-            auto m = socket.read_some(net::buffer(ptr, n), ec);
-            if (ec) {
-                if (would_block(ec)) {
-                    std::this_thread::yield();
-                    continue;
-                } else {
-                    throw ec;
-                }
-            }
-            if (m == 0) {
-                throw unexpected_eof;
-            }
-            got += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
+        io_exact<io_read>(socket, (char *)ptr, n);
     }
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        namespace net = std::experimental::net;
-        size_t sent = 0;
-        while (n > 0) {
-            std::error_code ec;
-            auto m = socket.write_some(net::buffer(ptr, n), ec);
-            if (ec) {
-                if (would_block(ec)) {
-                    std::this_thread::yield();
-                    continue;
-                } else {
-                    throw ec;
-                }
-            }
-            if (m == 0) {
-                throw unexpected_eof;
-            }
-            sent += m;
-            n -= m;
-            ptr = (char *)(ptr) + m;
-        }
+        io_exact<io_write>(socket, (char *)ptr, n);
     }
 };
 
