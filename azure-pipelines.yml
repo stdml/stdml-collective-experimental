@@ -45,11 +45,8 @@ jobs:
   - script: make -j $(nproc) package
     displayName: Build
 
-  - script: echo TODO
-    displayName: Upload
-
   - task: PublishPipelineArtifact@1
     inputs:
-      targetPath: '$(ls release/*.gz)'
+      targetPath: $(ls release/*.gz)
       artifact: 'libstdml-collective'
       publishLocation: 'pipeline'
