@@ -171,34 +171,20 @@ task *run_graphs_async(session *sess, const workspace *w,
     return steps.seq();
 }
 
-template <typename T>
-T ceil_div(T a, T b)
-{
-    return (a / b) + (a % b ? 1 : 0);
-}
-
-extern size_t name_based_hash(size_t i, const std::string &name);
-
 size_t run_graph_pair_list_async(session *sess, const workspace &w,
                                  const graph_pair_list &gps, size_t chunk_size)
 {
-    // log() << __func__;
-    const size_t k = ceil_div(w.data_size(), chunk_size);
-    const auto ws = w.split(k);
-    const auto f = [&](size_t i) {
-        const size_t j = name_based_hash(i, ws[i].name);
-        const auto &[g0, g1] = gps.choose(j);
-        return run_graphs_async(sess, &ws[i], {g0, g1});
+    const auto pw = split_work(w, gps, chunk_size);
+    const auto f = [&](auto &wgp) {
+        const auto &[w, gp] = wgp;
+        return run_graphs_async(sess, &w, gp);
     };
-    auto t = task::par(task::fmap(f, std::views::iota((size_t)0, ws.size())),
-                       sess->runtime_.get());
-    if (k > 1) {
-        log() << "splitted workspace into" << k << "parts";
+    auto t = task::par(task::fmap(f, pw), sess->runtime_.get());
+    if (pw.size() > 1) {
+        log() << "splitted workspace into" << pw.size() << "parts";
     }
-    // log() << __func__ << "task built";
     t->finish();
-    // log() << __func__ << "task finished";
     delete t;
-    return k;
+    return pw.size();
 }
 }  // namespace stdml::collective

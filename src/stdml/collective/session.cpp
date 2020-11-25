@@ -96,4 +96,35 @@ void session::_ring_handshake()
     const auto msg = "hello world"s;
     client->send(next, "ping", msg.data(), msg.size());
 }
+
+template <typename T>
+T ceil_div(T a, T b)
+{
+    return (a / b) + (a % b ? 1 : 0);
+}
+
+size_t name_based_hash(size_t i, const std::string &name)
+{
+    size_t h = 0;
+    for (const auto &c : name) {
+        h += c * c;
+    }
+    return h;
+}
+
+std::vector<std::pair<workspace, std::vector<const graph *>>>
+split_work(const workspace &w, const graph_pair_list &gps, size_t chunk_size)
+{
+    const size_t k = ceil_div(w.data_size(), chunk_size);
+    const auto ws = w.split(k);
+    std::vector<std::pair<workspace, std::vector<const graph *>>> pw;
+    pw.reserve(ws.size());
+    for (auto i : std::views::iota((size_t)0, ws.size())) {
+        const size_t j = name_based_hash(i, ws[i].name);
+        const auto &[g0, g1] = gps.choose(j);
+        pw.emplace_back(
+            std::make_pair(ws[i], std::vector<const graph *>({g0, g1})));
+    }
+    return pw;
+}
 }  // namespace stdml::collective

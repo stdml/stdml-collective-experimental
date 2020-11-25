@@ -118,6 +118,9 @@ class session
     }
 };
 
+std::vector<std::pair<workspace, std::vector<const graph *>>>
+split_work(const workspace &w, const graph_pair_list &gps, size_t chunk_size);
+
 size_t run_graph_pair_list(session *sess, const workspace &w,
                            const graph_pair_list &gps, size_t chunk_size);
 
