@@ -69,7 +69,7 @@ class base_ioutil<Socket, false>
     {
         namespace net = std::experimental::net;
         while (n > 0) {
-            auto m = socket.read_some(net::buffer(ptr, n));
+            auto m = io_some<iot>()(socket, ptr, n);
             if (m == 0) {
                 throw unexpected_eof;
             }

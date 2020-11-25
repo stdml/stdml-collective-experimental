@@ -55,7 +55,7 @@ class connection_impl : public connection
             .src_ipv4 = local.ipv4,
         };
         log() << "connected to" << remote;
-        socket_.write_some(net::buffer(&h, sizeof(h)));
+        ioutil::write(socket_, h);
         log() << "upgraded to" << remote << "@" << type;
     }
 
@@ -283,6 +283,7 @@ class server_impl : public server
     using tcp_endpoint = net::ip::tcp::endpoint;
     using tcp_socket = net::ip::tcp::socket;
     using tcp_acceptor = net::ip::tcp::acceptor;
+    using ioutil = basic_ioutil<tcp_socket>;
 
     const peer_id self_;
     conn_handler_impl *handler_;
@@ -312,7 +313,7 @@ class server_impl : public server
     static std::pair<peer_id, rchan::conn_type> upgrade(tcp_socket &socket)
     {
         conn_header h;
-        socket.read_some(net::buffer(&h, sizeof(h)));
+        ioutil::read(socket, h);
         peer_id src = {
             .ipv4 = h.src_ipv4,
             .port = h.src_port,
