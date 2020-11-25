@@ -45,8 +45,12 @@ jobs:
   - script: make -j $(nproc) package
     displayName: Build
 
+  - script: rm -fr release/_CPack_Packages
+    displayName: Cleanup
+
   - task: PublishPipelineArtifact@1
     inputs:
-      targetPath: $(ls release/*.gz)
+      # targetPath: $(ls release/*.gz)
+      targetPath: ./release
       artifact: 'libstdml-collective'
       publishLocation: 'pipeline'
