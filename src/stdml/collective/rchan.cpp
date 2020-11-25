@@ -110,8 +110,9 @@ class message_reader_impl : public message_reader
     std::optional<received_header> read_header() override
     {
         received_header hdr;
-        auto n = ioutil::read(*socket_, hdr.name_len);
-        if (n == 0) {
+        std::error_code ec;
+        ioutil::read(*socket_, hdr.name_len, ec);
+        if (ec) {
             return {};
         }
         hdr.name.resize(hdr.name_len);
