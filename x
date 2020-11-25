@@ -3,6 +3,8 @@ set -e
 
 cfg_flags() {
     echo --mpi
+    echo --go-runtime
+    echo --with-go-runtime=$HOME/local
 }
 
 build() {
@@ -29,4 +31,6 @@ main() {
 
 build
 # ./scripts/run/example-mpi.sh
-./scripts/bench/mpi.sh
+# ./scripts/bench/mpi.sh
+export STDML_COLLECTIVE_USE_GO_RUNTIME=1
+./scripts/bench/small.sh

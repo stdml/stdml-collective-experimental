@@ -11,6 +11,7 @@
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/execution.hpp>
 #include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/runtimes/go.hpp>
 #include <stdml/bits/collective/session.hpp>
 #include <stdml/bits/collective/stat.hpp>
 #include <stdml/bits/collective/thread_pool.hpp>
@@ -43,8 +44,15 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
 
 void session::all_reduce(const workspace &w)
 {
+#if STDML_COLLECTIVE_HAVE_GO_RUNTIME
+    bool use_go_rt = parse_env_bool("STDML_COLLECTIVE_USE_GO_RUNTIME");
+    if (use_go_rt) {
+        constexpr auto f = run_graph_pair_list_go_rt;
+        f(this, w, all_reduce_topo_, 1 << 20);
+        return;
+    }
+#endif
     bool async = parse_env_bool("STDML_COLLECTIVE_USE_ASYNC");
-    // log() << __func__ << "using async" << async;
     const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
     f(this, w, all_reduce_topo_, 1 << 20);
 }

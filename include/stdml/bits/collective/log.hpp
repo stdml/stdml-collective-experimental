@@ -2,6 +2,8 @@
 #include <iostream>
 #include <mutex>
 
+#define TODO(e) fprintf(stderr, "TODO: %s\n", (e));
+
 namespace stdml::collective
 {
 class logger
