@@ -110,6 +110,14 @@ class session
         return y;
     }
 
+    bool consistent(const void *ptr, size_t size);
+
+    template <typename T>
+    bool consistent(const T &x)
+    {
+        return consistent(&x, sizeof(T));
+    }
+
     template <typename R>
     void broadcast(const R *begin1, const R *end1, R *begin2)
     {

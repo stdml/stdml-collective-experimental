@@ -60,7 +60,7 @@ peer::peer(const peer_id self, const peer_list init_peers,
       handler_(rchan::conn_handler::New(mailbox_.get(), slotbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
-    register_cleanup_handlers(this);  // doesn't work
+    // register_cleanup_handlers(this);  // doesn't work
 }
 
 peer peer::single()
@@ -145,5 +145,15 @@ session peer::join()
     session sess(self_, init_peers_, mailbox_.get(), slotbox_.get(),
                  client_pool_.get(), init_strategy_);
     return sess;
+}
+
+peer::resize_result peer::resize()
+{
+    return {false, false};
+}
+
+peer::resize_result peer::resize(size_t)
+{
+    return {false, false};
 }
 }  // namespace stdml::collective

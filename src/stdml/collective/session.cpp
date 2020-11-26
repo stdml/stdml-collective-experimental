@@ -96,6 +96,23 @@ void session::all_reduce(const void *input, void *output, size_t count,
     all_reduce(w);
 }
 
+bool session::consistent(const void *ptr, size_t size)
+{
+    size_t size_1 = all_reduce(size, min);
+    size_t size_2 = all_reduce(size, max);
+    if (size_1 != size_2) {
+        return false;
+    }
+    if (size == 0) {
+        return true;
+    }
+    std::vector<uint8_t> y(size);
+    std::vector<uint8_t> z(size);
+    all_reduce(ptr, y.data(), size, type<uint8_t>(), min);
+    all_reduce(ptr, z.data(), size, type<uint8_t>(), max);
+    return y == z;
+}
+
 void session::barrier()
 {
     uint32_t x = 1;

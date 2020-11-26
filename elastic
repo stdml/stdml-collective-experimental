@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+kungfu_run_flags() {
+    echo -q
+    echo -logdir logs
+
+    echo -np 2
+
+    echo -w
+    local port=9999
+    echo -config-server http://127.0.0.1:$port/config
+    echo -builtin-config-port $port
+}
+
+kungfu_run() {
+    kungfu-run $(kungfu_run_flags) $@
+}
+
+kungfu_run ./bin/example-elastic

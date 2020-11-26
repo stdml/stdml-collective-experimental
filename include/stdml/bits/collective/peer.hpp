@@ -38,5 +38,13 @@ class peer
     void stop();
 
     session join();
+
+    struct resize_result {
+        bool changed;
+        bool detached;
+    };
+
+    resize_result resize();
+    resize_result resize(size_t);
 };
 }  // namespace stdml::collective
