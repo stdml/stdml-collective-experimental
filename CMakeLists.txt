@@ -10,6 +10,10 @@ INCLUDE(cmake/strict.cmake)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 
+OPTION(USE_CLANG_TIDY "Use clang-tidy." OFF)
+IF(USE_CLANG_TIDY)
+    INCLUDE(cmake/tidy.cmake)
+ENDIF()
 IF(ENABLE_TRACE)
     INCLUDE(cmake/fetch_stdtracer.cmake)
     ADD_COMPILE_OPTIONS(-DSTDML_ENABLE_TRACE=1)
