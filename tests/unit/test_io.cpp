@@ -4,6 +4,8 @@
 #include <stdml/bits/collective/ioutil.hpp>
 #include <stdml/bits/collective/log.hpp>
 
+extern void set_default_native_socket_opts(int fd);
+
 namespace net = std::experimental::net;
 using stdml::collective::log;
 
@@ -212,6 +214,7 @@ void test_single_thread()
     const tcp_endpoint ep(addr, 9999);
     acceptor.open(ep.protocol());
     // acceptor.bind(ep);
+    set_default_native_socket_opts(acceptor.native_handle());
     wait_bind(acceptor, ep);
     acceptor.listen(5);
     acceptor.native_non_blocking(true);

@@ -10,6 +10,8 @@
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 
+extern void set_default_native_socket_opts(int fd);
+
 namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
@@ -349,6 +351,8 @@ class server_impl : public server
         const tcp_endpoint ep(addr, id.port);
 
         acceptor_.open(ep.protocol());
+        log() << "native handle:" << acceptor_.native_handle();
+        set_default_native_socket_opts(acceptor_.native_handle());
         // tcp_acceptor::reuse_address option;
         // acceptor_.get_option(option);
         // log() << "option:" << option;

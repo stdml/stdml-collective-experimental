@@ -1,2 +1,7 @@
 program exits before signal handler finishes
 - https://stackoverflow.com/questions/22134538/python-program-exiting-before-signal-handler-is-finished-running
+
+
+
+CLOSE_WAIT indicates that the remote endpoint (other side of the connection) has closed the connection.
+TIME_WAIT indicates that local endpoint (this side) has closed the connection.
