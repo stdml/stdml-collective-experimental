@@ -190,22 +190,6 @@ std::unique_ptr<stdml::collective::task> make_task(Args &&... args)
     return std::make_unique<Task>(std::forward<Args>(args)...);
 }
 
-void wait_bind(tcp_acceptor &acceptor, const tcp_endpoint &ep)
-{
-    for (int i = 0;; ++i) {
-        std::error_code ec;
-        acceptor.bind(ep, ec);
-        if (!ec) {
-            log() << "bind success after" << i << "retries";
-            break;
-        }
-        log() << "bind to" << ep << "failed :" << ec  //
-              << "(" << ec.message() << ")";
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1s);
-    }
-}
-
 void test_single_thread()
 {
     net::io_context ctx;
@@ -213,9 +197,8 @@ void test_single_thread()
     const auto addr = net::ip::make_address("127.0.0.1");
     const tcp_endpoint ep(addr, 9999);
     acceptor.open(ep.protocol());
-    // acceptor.bind(ep);
     set_default_native_socket_opts(acceptor.native_handle());
-    wait_bind(acceptor, ep);
+    acceptor.bind(ep);
     acceptor.listen(5);
     acceptor.native_non_blocking(true);
 
