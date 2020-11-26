@@ -1,12 +1,14 @@
 OPTION(BUILD_LIB "Build static lib." ON)
 OPTION(BUILD_SHARED_LIB "Build shared lib." OFF)
 
-FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp)
+FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp
+     ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.c)
 
 FUNCTION(ADD_LIB_STDML_COLLECTIVE target)
     ADD_LIBRARY(${target} ${ARGN})
     SET_PROPERTY(TARGET ${target} PROPERTY CXX_STANDARD 20)
-    TARGET_COMPILE_OPTIONS(${target} PRIVATE -fcoroutines)
+    TARGET_COMPILE_OPTIONS(${target}
+                           PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
     TARGET_LINK_LIBRARIES(${target} Threads::Threads)
     IF(HAVE_GO_RUNTIME)
         TARGET_SOURCES(

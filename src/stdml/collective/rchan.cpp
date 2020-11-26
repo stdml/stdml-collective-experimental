@@ -10,7 +10,9 @@
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 
+extern "C" {
 extern void set_default_native_socket_opts(int fd);
+}
 
 namespace net = std::experimental::net;
 
