@@ -105,10 +105,16 @@ class task_builder
         tasks_.emplace_back(t);
     }
 
+    void operator<<(std::unique_ptr<task> t)
+    {
+        tasks_.emplace_back(std::move(t));
+    }
+
     task *par()
     {
         return task::par(std::move(tasks_));
     }
+
     task *seq()
     {
         return task::seq(std::move(tasks_));
