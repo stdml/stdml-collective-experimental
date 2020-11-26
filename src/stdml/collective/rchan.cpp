@@ -11,7 +11,8 @@
 #include <stdml/bits/collective/stat.hpp>
 
 extern "C" {
-extern void set_default_native_socket_opts(int fd);
+extern void set_default_server_socket_opts(int fd);
+extern void set_default_client_socket_opts(int fd);
 }
 
 namespace net = std::experimental::net;
@@ -52,7 +53,9 @@ class connection_impl : public connection
     {
         const auto addr = net::ip::make_address(remote.hostname().c_str());
         const tcp_endpoint ep(addr, remote.port);
+        log() << "socket_.native_handle()" << socket_.native_handle();
         wait_connect(socket_, ep);
+        set_default_client_socket_opts(socket_.native_handle());
         conn_header h = {
             .type = type,
             .src_port = local.port,
@@ -354,7 +357,7 @@ class server_impl : public server
 
         acceptor_.open(ep.protocol());
         log() << "native handle:" << acceptor_.native_handle();
-        set_default_native_socket_opts(acceptor_.native_handle());
+        set_default_server_socket_opts(acceptor_.native_handle());
         // tcp_acceptor::reuse_address option;
         // acceptor_.get_option(option);
         // log() << "option:" << option;

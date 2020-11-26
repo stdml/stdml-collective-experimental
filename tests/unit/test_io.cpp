@@ -5,7 +5,7 @@
 #include <stdml/bits/collective/log.hpp>
 
 extern "C" {
-extern void set_default_native_socket_opts(int fd);
+extern void set_default_server_socket_opts(int fd);
 }
 
 namespace net = std::experimental::net;
@@ -199,7 +199,7 @@ void test_single_thread()
     const auto addr = net::ip::make_address("127.0.0.1");
     const tcp_endpoint ep(addr, 9999);
     acceptor.open(ep.protocol());
-    set_default_native_socket_opts(acceptor.native_handle());
+    set_default_server_socket_opts(acceptor.native_handle());
     acceptor.bind(ep);
     acceptor.listen(5);
     acceptor.native_non_blocking(true);

@@ -1,9 +1,11 @@
 #!/bin/sh
 set -e
 
+# export STDML_COLLECTIVE_ENABLE_LOG=1
+
 build() {
     ./configure
-    make
+    make -j $(nproc)
 }
 
 run_all() {
