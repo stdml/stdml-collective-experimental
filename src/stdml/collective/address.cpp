@@ -1,4 +1,5 @@
 #include <array>
+#include <cstring>
 #include <iostream>
 #include <ranges>
 #include <sstream>
@@ -28,7 +29,9 @@ static std::vector<std::string> split(const std::string &text, const char sep)
     std::string line;
     std::istringstream ss(text);
     while (std::getline(ss, line, sep)) {
-        if (!line.empty()) { lines.push_back(line); }
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
     }
     return lines;
 }
@@ -84,8 +87,9 @@ std::ostream &operator<<(std::ostream &os, const peer_id &id)
 
 std::ostream &operator<<(std::ostream &os, const peer_list &ps)
 {
-
-    for (const auto &p : ps) { os << "[" << p << "]"; }
+    for (const auto &p : ps) {
+        os << "[" << p << "]";
+    }
     return os;
 }
 
@@ -97,5 +101,23 @@ peer_list peer_list::gen(size_t n)
         ps.push_back(id.value());
     }
     return ps;
+}
+
+std::vector<std::byte> cluster_config::bytes() const
+{
+    static_assert(sizeof(peer_id) == 6);
+
+    using N = uint32_t;
+    const size_t size_1 = sizeof(peer_id) * runners_.size();
+    const size_t size_2 = sizeof(peer_id) * workers_.size();
+    const size_t size = sizeof(N) * 2 + size_1 + size_2;
+
+    std::vector<std::byte> bs(size);
+    std::byte *ptr = bs.data();
+    *(N *)(ptr + sizeof(N) * 0) = static_cast<N>(runners_.size());
+    *(N *)(ptr + sizeof(N) * 1) = static_cast<N>(runners_.size());
+    std::memcpy(ptr + sizeof(N) * 2, runners_.data(), size_1);
+    std::memcpy(ptr + sizeof(N) * 2 + size_1, workers_.data(), size_2);
+    return bs;
 }
 }  // namespace stdml::collective

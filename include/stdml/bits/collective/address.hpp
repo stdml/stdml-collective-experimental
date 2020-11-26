@@ -30,7 +30,7 @@ struct peer_id {
         return (static_cast<uint64_t>(ipv4) << 32) |
                static_cast<uint64_t>(port);
     }
-};
+} __attribute__((packed));
 
 std::ostream &operator<<(std::ostream &os, const peer_id &id);
 
@@ -47,7 +47,9 @@ class peer_list : public std::vector<peer_id>
     {
         peer_list ps;
         ps.reserve(ranks.size());
-        for (auto i : ranks) { ps.push_back(parent::operator[](i)); }
+        for (auto i : ranks) {
+            ps.push_back(parent::operator[](i));
+        }
         return ps;
     }
 
@@ -59,4 +61,13 @@ std::ostream &operator<<(std::ostream &os, const peer_list &ps);
 std::optional<peer_id> parse_peer_id(const std::string &s);
 
 std::optional<peer_list> parse_peer_list(const std::string &s);
+
+class cluster_config
+{
+    peer_list runners_;
+    peer_list workers_;
+
+  public:
+    std::vector<std::byte> bytes() const;
+};
 }  // namespace stdml::collective
