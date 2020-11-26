@@ -4,8 +4,7 @@ OPTION(BUILD_SHARED "Build shared lib." OFF)
 FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp
      ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.c)
 
-FUNCTION(ADD_LIB_STDML_COLLECTIVE target)
-    ADD_LIBRARY(${target} ${ARGN})
+FUNCTION(SET_LIB_STDML_COLLECTIVE_OPTIONS target)
     SET_PROPERTY(TARGET ${target} PROPERTY CXX_STANDARD 20)
     TARGET_COMPILE_OPTIONS(${target}
                            PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
@@ -21,12 +20,14 @@ FUNCTION(ADD_LIB_STDML_COLLECTIVE target)
 ENDFUNCTION()
 
 IF(BUILD_LIB)
-    ADD_LIB_STDML_COLLECTIVE(stdml-collective ${SRCS})
+    ADD_LIBRARY(stdml-collective ${SRCS})
+    SET_LIB_STDML_COLLECTIVE_OPTIONS(stdml-collective)
     INSTALL(TARGETS stdml-collective ARCHIVE DESTINATION lib)
 ENDIF()
 
 IF(BUILD_SHARED)
-    ADD_LIB_STDML_COLLECTIVE(stdml-collective-shared ${SRCS})
+    ADD_LIBRARY(stdml-collective-shared SHARED ${SRCS})
+    SET_LIB_STDML_COLLECTIVE_OPTIONS(stdml-collective-shared ${SRCS})
     INSTALL(TARGETS stdml-collective-shared LIBRARY DESTINATION lib)
     SET_TARGET_PROPERTIES(stdml-collective-shared PROPERTIES OUTPUT_NAME
                                                              stdml-collective)
