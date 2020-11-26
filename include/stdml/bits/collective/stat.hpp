@@ -11,8 +11,12 @@ namespace stdml::collective::rchan
 class summary
 {
   public:
-    summary() {}
-    ~summary() {}
+    summary()
+    {
+    }
+    ~summary()
+    {
+    }
 };
 
 class stat
@@ -67,10 +71,10 @@ void stat_enable();
 void stat_disable();
 }  // namespace stdml::collective::rchan
 
-#ifdef STDML_ENABLE_TRACE
-    #define STDML_PROFILE_RATE(name, payload)                                  \
+#ifdef STDML_COLLECTIVE_ENABLE_TRACE
+    #define STDML_COLLECTIVE_PROFILE_RATE(name, payload)                       \
         stdml::collective::rchan::scope __scope(                               \
             name, stdml::collective::rchan::_global_stat, payload)
 #else
-    #define STDML_PROFILE_RATE(name, payload)
+    #define STDML_COLLECTIVE_PROFILE_RATE(name, payload)
 #endif

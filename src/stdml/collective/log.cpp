@@ -10,7 +10,7 @@ extern bool parse_env_bool(const std::string &s);
 
 bool log_enabled()
 {
-    if (parse_env_bool("STDML_ENABLE_LOG")) {
+    if (parse_env_bool("STDML_COLLECTIVE_ENABLE_LOG")) {
         return true;
     }
     return false;

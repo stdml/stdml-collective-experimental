@@ -64,10 +64,10 @@ main() {
     summary_all
 }
 
-# export STDML_USE_THREAD_POOL=0
+# export STDML_COLLECTIVE_USE_THREAD_POOL=0
 # main
 
-export STDML_USE_THREAD_POOL=1
+export STDML_COLLECTIVE_USE_THREAD_POOL=1
 # main
 
 export STDML_COLLECTIVE_USE_ASYNC=1

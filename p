@@ -8,7 +8,7 @@ cfg_flags() {
 
 build() {
     ./configure $(cfg_flags)
-    make
+    make -j $(nproc)
 }
 
 run_all() {

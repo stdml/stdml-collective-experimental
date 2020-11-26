@@ -31,7 +31,7 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
       slotbox_(slotbox),
       client_pool_(client_pool)
 {
-    if (parse_env_bool("STDML_USE_THREAD_POOL")) {
+    if (parse_env_bool("STDML_COLLECTIVE_USE_THREAD_POOL")) {
         log() << "using thread pool";
         pool_.reset(sync::thread_pool::New(3));
         runtime_.reset(runtime::New(8));

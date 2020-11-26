@@ -12,16 +12,25 @@ namespace stdml::collective::rchan
 {
 stat _global_stat;
 
-stat::stat() : enabled_(parse_env_bool("STDML_ENABLE_TRACE"))
+stat::stat() : enabled_(parse_env_bool("STDML_COLLECTIVE_ENABLE_TRACE"))
 {
     events_.reserve(1 << 20);
 }
 
-stat::~stat() { report(); }
+stat::~stat()
+{
+    report();
+}
 
-void stat::enable() { enabled_ = true; }
+void stat::enable()
+{
+    enabled_ = true;
+}
 
-void stat::disable() { enabled_ = false; }
+void stat::disable()
+{
+    enabled_ = false;
+}
 
 void stat::report()
 {
@@ -55,11 +64,22 @@ scope::scope(std::string name, stat &s, size_t payload)
 
 scope::~scope()
 {
-    const instant t1 = clock::now();  //
+    const instant t1 = clock::now();
     s_.record(std::move(name_), t0_, t1, payload_);
 }
 
-void stat_report() { _global_stat.report(); }
-void stat_enable() { _global_stat.enable(); }
-void stat_disable() { _global_stat.disable(); }
+void stat_report()
+{
+    _global_stat.report();
+}
+
+void stat_enable()
+{
+    _global_stat.enable();
+}
+
+void stat_disable()
+{
+    _global_stat.disable();
+}
 }  // namespace stdml::collective::rchan

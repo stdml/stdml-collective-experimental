@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# export STDML_ENABLE_LOG=1
+# export STDML_COLLECTIVE_ENABLE_LOG=1
 
 rebuild() {
     ./configure --tests
@@ -43,10 +43,10 @@ test_all() {
 
 trace rebuild
 
-export STDML_USE_THREAD_POOL=0
+export STDML_COLLECTIVE_USE_THREAD_POOL=0
 trace test_all 16
 
-export STDML_USE_THREAD_POOL=1
+export STDML_COLLECTIVE_USE_THREAD_POOL=1
 trace test_all 16
 
 # export STDML_COLLECTIVE_USE_ASYNC=1

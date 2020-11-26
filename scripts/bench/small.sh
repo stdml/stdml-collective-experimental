@@ -37,6 +37,6 @@ bench_workload() {
 
 measure bench_workload 1024x100 20
 
-export STDML_USE_THREAD_POOL=1
+export STDML_COLLECTIVE_USE_THREAD_POOL=1
 export STDML_COLLECTIVE_USE_ASYNC=1
 measure bench_workload 1024x100 20

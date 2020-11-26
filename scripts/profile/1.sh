@@ -28,8 +28,9 @@ kungfu_run() {
     shift
 
     env KUNGFU_CONFIG_LOG_LEVEL=debug \
-        STDML_ENABLE_LOG=1 \
-        STDML_ENABLE_TRACE=1 \
+        STDML_COLLECTIVE_ENABLE_LOG=1 \
+        STDML_COLLECTIVE_ENABLE_TRACE=1 \
+        STDML_COLLECTIVE_USE_ASYNC=0 \
         kungfu-run $(kungfu_run_flags $np $logdir) $@
 }
 
@@ -37,7 +38,7 @@ profile_one() {
     local size=$1
     local count=$2
     local name="${size}x${count}"
-    kungfu_run 4 $name ./bin/bench-all-reduce $name 1
+    kungfu_run 4 $name ./bin/bench-all-reduce $name 4
 }
 
 parse_timeline() {
@@ -92,24 +93,24 @@ run_one() {
 }
 
 main() {
-    run_one 1024 200
+    run_one 1024 100
     # run_one 2048 100
     # run_one 4096 50
     # run_one 8192 20
     # run_one 10240 20
 }
 
-export STDML_USE_THREAD_POOL=0
+export STDML_COLLECTIVE_USE_THREAD_POOL=0
 main
-cp 1024x200.png 0.png
+cp 1024x100.png 0.png
 
-export STDML_USE_THREAD_POOL=1
+export STDML_COLLECTIVE_USE_THREAD_POOL=1
 main
-cp 1024x200.png 1.png
+cp 1024x100.png 1.png
 
-# export STDML_USE_THREAD_POOL=0
+# export STDML_COLLECTIVE_USE_THREAD_POOL=0
 # measure profile_one 1024 100
-# export STDML_USE_THREAD_POOL=1
+# export STDML_COLLECTIVE_USE_THREAD_POOL=1
 # measure profile_one 1024 100
 
 # 0 1 2 3 4 5 6 7 8 9 a b c d e f

@@ -82,7 +82,7 @@ class connection_impl : public connection
         };
         {
             std::lock_guard<std::mutex> _(mu_);
-            STDML_PROFILE_RATE(__func__, msg.len);
+            STDML_COLLECTIVE_PROFILE_RATE(__func__, msg.len);
             ioutil::write(socket_, mh.name_len);
             ioutil::write(socket_, mh.name, mh.name_len);
             ioutil::write(socket_, mh.flags);
@@ -129,7 +129,7 @@ class message_reader_impl : public message_reader
 
     bool read_body(void *data) override
     {
-        STDML_PROFILE_RATE(__func__, len_);
+        STDML_COLLECTIVE_PROFILE_RATE(__func__, len_);
         ioutil::read(*socket_, data, len_);
         return true;
     }
