@@ -1,5 +1,5 @@
 OPTION(BUILD_LIB "Build static lib." ON)
-OPTION(BUILD_SHARED_LIB "Build shared lib." OFF)
+OPTION(BUILD_SHARED "Build shared lib." OFF)
 
 FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp
      ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.c)
@@ -18,7 +18,6 @@ FUNCTION(ADD_LIB_STDML_COLLECTIVE target)
         TARGET_COMPILE_DEFINITIONS(${target}
                                    PRIVATE -DSTDML_COLLECTIVE_HAVE_GO_RUNTIME=1)
     ENDIF()
-    INSTALL(TARGETS stdml-collective ARCHIVE DESTINATION lib)
 ENDFUNCTION()
 
 IF(BUILD_LIB)
