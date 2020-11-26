@@ -42,6 +42,22 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
     barrier();
 }
 
+extern void run_graphs(session *sess, const workspace &w,
+                       const std::vector<const graph *> &gs);
+
+void session::broadcast(const void *input, void *output, size_t count, dtype dt)
+{
+    workspace w = {
+        .send = input,
+        .recv = output,
+        .count = count,
+        .dt = dt,
+        .op = sum,  // not used
+        .name = "",
+    };
+    run_graphs(this, w, {&all_reduce_topo_.pairs[0].broadcast_graph});
+}
+
 void session::all_reduce(const workspace &w)
 {
 #if STDML_COLLECTIVE_HAVE_GO_RUNTIME

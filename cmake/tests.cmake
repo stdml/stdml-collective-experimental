@@ -1,6 +1,7 @@
 ADD_BINARY(tests/unit/test_io.cpp)
 
 ADD_BINARY(tests/integration/test_all_reduce.cpp)
+ADD_BINARY(tests/integration/test_broadcast.cpp)
 ADD_BINARY(tests/integration/test_shutdown.cpp)
 
 ADD_EXECUTABLE(test-c++17 tests/build/c++17.cpp)

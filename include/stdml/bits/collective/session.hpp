@@ -116,6 +116,16 @@ class session
         const size_t count = std::distance(begin1, end1);
         broadcast(begin1, begin2, count, type<R>());
     }
+
+    template <typename T>
+    void broadcast(T &x)
+    {
+        // static_assert(std::is_standard_layout<T>::value);
+        T y;
+        using R = int8_t;
+        broadcast((const R *)&x, (R *)&y, sizeof(T), type<R>());
+        x = y;
+    }
 };
 
 std::vector<std::pair<workspace, std::vector<const graph *>>>
