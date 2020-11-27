@@ -119,17 +119,6 @@ void session::barrier()
     all_reduce(x);
 }
 
-void session::_ring_handshake()
-{
-    const size_t next_rank = (rank_ + 1) % peers_.size();
-    const auto next = peers_[next_rank];
-    log() << "next:" << next;
-    auto client = client_pool_->require(rchan::conn_ping);
-    using namespace std::string_literals;
-    const auto msg = "hello world"s;
-    client->send(next, "ping", msg.data(), msg.size());
-}
-
 template <typename T>
 T ceil_div(T a, T b)
 {

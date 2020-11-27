@@ -25,7 +25,6 @@ class session
     graph_pair_list all_reduce_topo_;
 
     void barrier();
-    void _ring_handshake();
 
   public:
     mailbox *mailbox_;                 // owned by peer
@@ -102,10 +101,10 @@ class session
         all_reduce(begin1, begin2, count, type<R>(), op, name);
     }
 
-    template <typename R>
-    R all_reduce(const R &x, reduce_op op = sum)
+    template <typename T>
+    T all_reduce(const T &x, reduce_op op = sum)
     {
-        R y;
+        T y;
         all_reduce(&x, &y, 1, op);
         return y;
     }
@@ -126,13 +125,13 @@ class session
     }
 
     template <typename T>
-    void broadcast(T &x)
+    T broadcast(const T &x)
     {
         // static_assert(std::is_standard_layout<T>::value);
         T y;
         using R = int8_t;
         broadcast((const R *)&x, (R *)&y, sizeof(T), type<R>());
-        x = y;
+        return y;
     }
 };
 

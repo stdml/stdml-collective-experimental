@@ -3,7 +3,7 @@
 int test_1(stdml::collective::session &sess)
 {
     int x = sess.rank();
-    sess.broadcast(x);
+    x = sess.broadcast(x);
     if (x != 0) {
         return 1;
     }
