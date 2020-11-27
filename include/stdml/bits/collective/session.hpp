@@ -6,6 +6,7 @@
 
 #include <stdml/bits/collective/address.hpp>
 #include <stdml/bits/collective/buffer.hpp>
+#include <stdml/bits/collective/config.hpp>
 #include <stdml/bits/collective/dtype.hpp>
 #include <stdml/bits/collective/mailbox.hpp>
 #include <stdml/bits/collective/rchan.hpp>
@@ -19,8 +20,9 @@ class session
 {
     std::unique_ptr<sync::thread_pool> pool_;
 
-    const peer_list peers_;
+    const system_config config_;
     const size_t rank_;
+    const peer_list peers_;
 
     graph_pair_list all_reduce_topo_;
 
@@ -33,9 +35,9 @@ class session
 
     std::unique_ptr<runtime> runtime_;  // TODO: move to peer
 
-    session(const peer_id self, const peer_list peers, mailbox *mailbox,
-            slotbox *slotbox, rchan::client_pool *client_pool,
-            const strategy s = star);
+    session(system_config config, size_t rank, peer_list peers,
+            mailbox *mailbox, slotbox *slotbox, rchan::client_pool *client_pool,
+            strategy s = star);
 
     size_t rank()
     {
@@ -61,8 +63,9 @@ class session
     void group_all_reduce(std::vector<std::future<workspace>> ws);
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
-                    reduce_op op, const std::string &name = "");
-    void broadcast(const void *input, void *output, size_t count, dtype dt);
+                    reduce_op op, std::string name = "");
+    void broadcast(const void *input, void *output, size_t count, dtype dt,
+                   std::string name = "");
 
     template <typename R>
     void all_reduce(const R *begin1, R *begin2, const size_t count,

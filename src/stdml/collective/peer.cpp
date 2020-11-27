@@ -50,10 +50,11 @@ void register_cleanup_handlers(peer *peer)
     std::signal(SIGTERM, __stop_peer_sign_handler);
 }
 
-peer::peer(const peer_id self, const peer_list init_peers,
-           const strategy init_strategy)
-    : self_(self),
-      init_peers_(init_peers),
+peer::peer(system_config config, peer_id self, peer_list init_peers,
+           strategy init_strategy)
+    : config_(std::move(config)),
+      self_(self),
+      init_peers_(std::move(init_peers)),
       init_strategy_(init_strategy),
       mailbox_(new mailbox),
       slotbox_(new slotbox),
@@ -66,24 +67,26 @@ peer::peer(const peer_id self, const peer_list init_peers,
 peer peer::single()
 {
     const auto id = parse_peer_id("127.0.0.1:10000").value();
-    return peer(id, {id});
+    auto config = parse_system_config_from_env();
+    return peer(std::move(config), id, {id});
 }
 
 extern strategy parse_kungfu_startegy();
 
 peer peer::from_kungfu_env()
 {
-    const auto self = parse_peer_id(safe_getenv("KUNGFU_SELF_SPEC"));
+    auto self = parse_peer_id(safe_getenv("KUNGFU_SELF_SPEC"));
     if (!self) {
         return single();
     }
-    const auto peers = parse_peer_list(safe_getenv("KUNGFU_INIT_PEERS"));
+    auto peers = parse_peer_list(safe_getenv("KUNGFU_INIT_PEERS"));
     if (!peers) {
         return single();
     }
-    const strategy s = parse_kungfu_startegy();
+    auto config = parse_system_config_from_env();
+    strategy s = parse_kungfu_startegy();
     log() << "using strategy" << s;
-    peer p(self.value(), peers.value(), s);
+    peer p(std::move(config), self.value(), std::move(peers.value()), s);
     p.start();
     return p;
 }
@@ -99,7 +102,9 @@ peer peer::from_ompi_env()
         return single();
     }
     const auto ps = peer_list::gen(size.value());
-    peer p(ps[rank.value()], ps);
+    auto config = parse_system_config_from_env();
+    auto self = ps[rank.value()];
+    peer p(std::move(config), self, std::move(ps));
     p.start();
     return p;
 }
@@ -142,7 +147,9 @@ void peer::stop()
 
 session peer::join()
 {
-    session sess(self_, init_peers_, mailbox_.get(), slotbox_.get(),
+    auto rank = std::find(init_peers_.begin(), init_peers_.end(), self_) -
+                init_peers_.begin();
+    session sess(config_, rank, init_peers_, mailbox_.get(), slotbox_.get(),
                  client_pool_.get(), init_strategy_);
     return sess;
 }

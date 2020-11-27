@@ -21,12 +21,13 @@ namespace stdml::collective
 {
 extern bool parse_env_bool(const std::string &s);
 
-session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
-                 slotbox *slotbox, rchan::client_pool *client_pool,
-                 const strategy s)
-    : peers_(peers),
-      rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
-      all_reduce_topo_(make_graph_pair_list(s, peers.size())),
+session::session(system_config config, size_t rank, peer_list peers,
+                 mailbox *mailbox, slotbox *slotbox,
+                 rchan::client_pool *client_pool, strategy s)
+    : config_(std::move(config)),
+      rank_(rank),
+      peers_(std::move((peers))),
+      all_reduce_topo_(make_graph_pair_list(s, peers_.size())),
       mailbox_(mailbox),
       slotbox_(slotbox),
       client_pool_(client_pool)
@@ -45,7 +46,8 @@ session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
 extern void run_graphs(session *sess, const workspace &w,
                        const std::vector<const graph *> &gs);
 
-void session::broadcast(const void *input, void *output, size_t count, dtype dt)
+void session::broadcast(const void *input, void *output, size_t count, dtype dt,
+                        std::string name)
 {
     workspace w = {
         .send = input,
@@ -53,7 +55,7 @@ void session::broadcast(const void *input, void *output, size_t count, dtype dt)
         .count = count,
         .dt = dt,
         .op = sum,  // not used
-        .name = "",
+        .name = std::move(name),
     };
     run_graphs(this, w, {&all_reduce_topo_.pairs[0].broadcast_graph});
 }
@@ -83,7 +85,7 @@ void session::group_all_reduce(std::vector<std::future<workspace>> ws)
 }
 
 void session::all_reduce(const void *input, void *output, size_t count,
-                         dtype dt, reduce_op op, const std::string &name)
+                         dtype dt, reduce_op op, std::string name)
 {
     workspace w = {
         .send = input,
@@ -91,7 +93,7 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .count = count,
         .dt = dt,
         .op = op,
-        .name = name,
+        .name = std::move(name),
     };
     all_reduce(w);
 }
