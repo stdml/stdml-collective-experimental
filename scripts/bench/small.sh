@@ -31,12 +31,17 @@ kungfu_run() {
 
 bench_workload() {
     local workload=$1
-    local times=$2
-    kungfu_run 4 $workload ./bin/bench-all-reduce $workload $times
+    local steps=$2
+    local warms=$3
+    kungfu_run 4 $workload ./bin/bench-all-reduce $workload $steps $warms
 }
 
-measure bench_workload 1024x100 20
+workload=1024x100
 
-export STDML_COLLECTIVE_USE_THREAD_POOL=1
+# measure bench_workload $workload 20 5
+
+# export STDML_COLLECTIVE_USE_THREAD_POOL=1
+# measure bench_workload $workload 20 5
+
 export STDML_COLLECTIVE_USE_ASYNC=1
-measure bench_workload 1024x100 20
+measure bench_workload $workload 20 5

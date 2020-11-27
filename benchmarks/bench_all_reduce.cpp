@@ -100,7 +100,8 @@ std::vector<size_t> read_int_list(const char *filename)
 using stdml::collective::log;
 using stdml::collective::PRINT;
 
-void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
+void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
+           int warmup_steps)
 {
     // pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
@@ -111,11 +112,11 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
     // stdml::collective::rchan::stat_disable();
 
     auto peer = stdml::collective::peer::from_env();
-    stdml::collective::session session = peer.join();
+    stdml::collective::session sess = peer.join();
 
     // stdml::collective::rchan::stat_enable();
 
-    size_t multiplier = 4 * (session.size() - 1);
+    size_t multiplier = 4 * (sess.size() - 1);
 
     std::vector<fake_cpu_buffer_t<float>> buffers;
     for (auto i : std::views::iota((size_t)0, sizes.size())) {
@@ -124,22 +125,33 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
         buffers.emplace_back(name, sizes[i]);
     }
 
-    std::vector<double> metrics;
-    for (auto i : std::views::iota(0, times)) {
-        log(PRINT) << "bench step" << i;
-        auto d = bench_step(session, buffers);
-        double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
-        metrics.push_back(metric);
-        std::cout << "step " << i + 1 << " " << show_rate(metric) << std::endl;
+    auto run_stage = [&](const char *name, int steps) {
+        std::vector<double> metrics;
+        for (auto i : std::views::iota(0, steps)) {
+            log(PRINT) << "bench step" << i;
+            auto d = bench_step(sess, buffers);
+            double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
+            metrics.push_back(metric);
+            if (sess.rank() == 0) {
+                std::cout << name << " " << i + 1 << " " << show_rate(metric)
+                          << std::endl;
+            }
+        }
+        return metrics;
+    };
+    run_stage("warmup", warmup_steps);
+    auto metrics = run_stage("step", steps);
+    if (sess.rank() == 0) {
+        std::cout << "FINAL RESULT: " << name << " " << show_rate(mean(metrics))
+                  << " | " << peer.config() << std::endl;
     }
-    std::cout << "FINAL RESULT: " << name << " " << show_rate(mean(metrics))
-              << std::endl;
 }
 
 struct options {
     std::string name;
     std::vector<size_t> sizes;
-    int times;
+    int steps;
+    int warmup_steps;
 };
 
 options parse_args(int argc, char *argv[])
@@ -154,28 +166,20 @@ options parse_args(int argc, char *argv[])
         sizes = read_int_list(workload.c_str());
     }
 
-    const int times = std::stoi(argv[2]);
+    const int steps = std::stoi(argv[2]);
 
+    int warmup_step = 0;
     if (argc > 3) {
-        const size_t tot = std::accumulate(sizes.begin(), sizes.end(), 0);
-        sizes = {tot};
+        warmup_step = std::stoi(argv[3]);
     }
 
-    return {workload, sizes, times};
-}
-
-void signal_handler(int sig)
-{
-    log() << "signal" << sig << ":" << strsignal(sig);  //
+    return {workload, sizes, steps, warmup_step};
 }
 
 int main(int argc, char *argv[])
 {
     // TRACE_SCOPE(__func__);
     auto options = parse_args(argc, argv);
-
-    std::signal(SIGINT, signal_handler);
-
-    bench(options.name, options.sizes, options.times);
+    bench(options.name, options.sizes, options.steps, options.warmup_steps);
     return 0;
 }

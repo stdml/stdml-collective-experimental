@@ -36,6 +36,11 @@ class peer
     static peer from_ompi_env();
     static peer from_env();
 
+    const system_config &config() const
+    {
+        return config_;
+    }
+
     void start();
     void stop();
 
