@@ -4,11 +4,19 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-void set_default_server_socket_opts(int fd)
+void reuse_addr(int fd)
 {
     int enable = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
         perror("setsockopt(SO_REUSEADDR) failed");
+    }
+}
+
+void no_delay(int fd)
+{
+    int enable = 1;
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(int)) < 0) {
+        perror("setsockopt(TCP_NODELAY) failed");
     }
 }
 
@@ -23,11 +31,13 @@ void show_socket_opts(int fd)
     fprintf(stderr, "old getsockopt(TCP_NODELAY)=%d, len=%d\n", old, (int)len);
 }
 
+void set_default_server_socket_opts(int fd)
+{
+    reuse_addr(fd);
+}
+
 void set_default_client_socket_opts(int fd)
 {
     // show_socket_opts(fd);
-    int enable = 1;
-    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(int)) < 0) {
-        perror("setsockopt(TCP_NODELAY) failed");
-    }
+    // no_delay(fd);
 }
