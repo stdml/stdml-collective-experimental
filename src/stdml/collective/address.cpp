@@ -9,18 +9,19 @@
 
 uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
-    return (static_cast<uint32_t>(a) << 24) | (static_cast<uint32_t>(b) << 16) |
-           (static_cast<uint32_t>(c) << 8) | (static_cast<uint32_t>(d));
+    uint32_t x;
+    uint8_t *p = reinterpret_cast<uint8_t *>(&x);
+    p[0] = a;
+    p[1] = b;
+    p[2] = c;
+    p[3] = d;
+    return x;
 }
 
-std::array<uint8_t, 4> unpack(uint32_t x)
+constexpr std::array<uint8_t, 4> unpack(uint32_t x)
 {
-    return {
-        static_cast<uint8_t>(x >> 24),
-        static_cast<uint8_t>((x >> 16) & 0xff),
-        static_cast<uint8_t>((x >> 8) & 0xff),
-        static_cast<uint8_t>(x & 0xff),
-    };
+    uint8_t *p = reinterpret_cast<uint8_t *>(&x);
+    return {p[0], p[1], p[2], p[3]};
 }
 
 static std::vector<std::string> split(const std::string &text, const char sep)

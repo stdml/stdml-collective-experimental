@@ -1,17 +1,23 @@
 #include <stdml/collective>
 
-void test_1(stdml::collective::session &sess)
+int test_1(stdml::collective::session &sess)
 {
     int x = sess.rank();
-    std::cout << "before: " << x << std::endl;
     sess.broadcast(x);
-    std::cout << "after: " << x << std::endl;
+    if (x != 0) {
+        return 1;
+    }
+    return 0;
 }
 
 int main()
 {
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session sess = peer.join();
-    test_1(sess);
+    int failed = test_1(sess);
+    if (failed) {
+        return 1;
+    }
+    std::cout << "all test passed: " << std::endl;
     return 0;
 }
