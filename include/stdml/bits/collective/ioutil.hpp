@@ -25,14 +25,14 @@ struct io_some;
 template <>
 struct io_some<io_read> {
     template <typename Socket>
-    auto operator()(Socket &sock, char *ptr, size_t n)
+    auto operator()(Socket &sock, void *ptr, size_t n)
     {
         namespace net = std::experimental::net;
         return sock.read_some(net::buffer(ptr, n));
     }
 
     template <typename Socket>
-    auto operator()(Socket &sock, char *ptr, size_t n, std::error_code &ec)
+    auto operator()(Socket &sock, void *ptr, size_t n, std::error_code &ec)
     {
         namespace net = std::experimental::net;
         return sock.read_some(net::buffer(ptr, n), ec);
@@ -42,14 +42,14 @@ struct io_some<io_read> {
 template <>
 struct io_some<io_write> {
     template <typename Socket>
-    auto operator()(Socket &sock, const char *ptr, size_t n)
+    auto operator()(Socket &sock, const void *ptr, size_t n)
     {
         namespace net = std::experimental::net;
         return sock.write_some(net::buffer(ptr, n));
     }
 
     template <typename Socket>
-    auto operator()(Socket &sock, const char *ptr, size_t n,
+    auto operator()(Socket &sock, const void *ptr, size_t n,
                     std::error_code &ec)
     {
         namespace net = std::experimental::net;
@@ -64,7 +64,7 @@ template <typename Socket>
 class base_ioutil<Socket, false>
 {
     template <io_type iot>
-    static void io_exact(Socket &socket, char *ptr, size_t n)
+    static void io_exact(Socket &socket, void *ptr, size_t n)
     {
         namespace net = std::experimental::net;
         while (n > 0) {
@@ -73,21 +73,20 @@ class base_ioutil<Socket, false>
                 throw unexpected_eof;
             }
             n -= m;
-            ptr += m;
+            ptr = (char *)(ptr) + m;
         }
     }
 
   public:
     static void read(Socket &socket, void *ptr, size_t n)
     {
-        io_exact<io_read>(socket, (char *)ptr, n);
+        io_exact<io_read>(socket, ptr, n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n, std::error_code &ec)
     {
-        namespace net = std::experimental::net;
         while (n > 0) {
-            auto m = socket.read_some(net::buffer(ptr, n), ec);
+            auto m = io_some<io_read>()(socket, ptr, n, ec);
             if (ec) {
                 return;
             }
@@ -103,7 +102,7 @@ class base_ioutil<Socket, false>
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        io_exact<io_write>(socket, (char *)ptr, n);
+        io_exact<io_write>(socket, (void *)ptr, n);
     }
 };
 
@@ -122,7 +121,6 @@ class io_exact_task : public task
 
     void poll() override
     {
-        namespace net = std::experimental::net;
         if (n_ == 0) {
             return;
         }
@@ -152,9 +150,8 @@ template <typename Socket>
 class base_ioutil<Socket, true>
 {
     template <io_type iot>
-    static void io_exact(Socket &socket, char *ptr, size_t n)
+    static void io_exact(Socket &socket, void *ptr, size_t n)
     {
-        namespace net = std::experimental::net;
         while (n > 0) {
             std::error_code ec;
             auto m = io_some<iot>()(socket, ptr, n, ec);
@@ -170,7 +167,7 @@ class base_ioutil<Socket, true>
                 throw unexpected_eof;
             }
             n -= m;
-            ptr += m;
+            ptr = (char *)(ptr) + m;
         }
     }
 
@@ -185,17 +182,17 @@ class base_ioutil<Socket, true>
                                                 size_t n)
     {
         return std::make_unique<io_exact_task<Socket, io_write>>(
-            socket, (char *)ptr, n);
+            socket, (void *)ptr, n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n)
     {
-        io_exact<io_read>(socket, (char *)ptr, n);
+        io_exact<io_read>(socket, ptr, n);
     }
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        io_exact<io_write>(socket, (char *)ptr, n);
+        io_exact<io_write>(socket, (void *)ptr, n);
     }
 };
 
