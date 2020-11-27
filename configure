@@ -21,6 +21,9 @@ parse_args() {
         --tests)
             BUILD_TESTS=1
             ;;
+        --benchmarks)
+            BUILD_BENCHMARKS=1
+            ;;
         --trace)
             ENABLE_TRACE=1
             ;;
@@ -75,12 +78,15 @@ add_cmake_flags() {
         add_cmake_flag CPACK_PACKAGE_VERSION $RELEASE
     fi
 
+    # BEGIN sort
+    add_cmake_flag BUILD_BENCHMARKS ${BUILD_BENCHMARKS}
     add_cmake_flag BUILD_SHARED $BUILD_SHARED
     add_cmake_flag BUILD_TESTS $BUILD_TESTS
     add_cmake_flag DISABLE_CXX11_ABI $DISABLE_CXX11_ABI
-    add_cmake_flag HAVE_MPI $HAVE_MPI
-    add_cmake_flag HAVE_GO_RUNTIME $HAVE_GO_RUNTIME
     add_cmake_flag GO_RUNTIME $GO_RUNTIME
+    add_cmake_flag HAVE_GO_RUNTIME $HAVE_GO_RUNTIME
+    add_cmake_flag HAVE_MPI $HAVE_MPI
+    # END sort
 
     add_cmake_flag CMAKE_EXPORT_COMPILE_COMMANDS ${VERBOSE}
     add_cmake_flag CMAKE_VERBOSE_MAKEFILE ${VERBOSE}

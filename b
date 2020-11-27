@@ -4,7 +4,7 @@ set -e
 # export STDML_COLLECTIVE_ENABLE_LOG=1
 
 build() {
-    ./configure
+    ./configure --benchmarks
     make -j $(nproc)
 }
 

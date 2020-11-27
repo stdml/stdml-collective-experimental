@@ -54,3 +54,40 @@ jobs:
       targetPath: ./release
       artifact: 'libstdml-collective'
       publishLocation: 'pipeline'
+
+- job: benchmark
+  steps:
+  - script: ./configure --benchmarks
+    displayName: Configure
+
+  - script: make -j $(nproc)
+    displayName: Build
+
+  - script: |
+      go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+      export GOBIN=$HOME/go/bin
+      go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    displayName: Install Deps
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      export STDML_COLLECTIVE_USE_THREAD_POOL=1
+      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      export STDML_COLLECTIVE_USE_ASYNC=1
+      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench
