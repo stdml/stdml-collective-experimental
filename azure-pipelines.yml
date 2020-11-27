@@ -73,7 +73,8 @@ jobs:
       export GOBIN=$HOME/go/bin
       export PATH=$GOBIN:$PATH
 
-      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
     displayName: Bench
 
   - script: |
@@ -81,7 +82,8 @@ jobs:
       export PATH=$GOBIN:$PATH
 
       export STDML_COLLECTIVE_USE_THREAD_POOL=1
-      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
     displayName: Bench
 
   - script: |
@@ -89,5 +91,6 @@ jobs:
       export PATH=$GOBIN:$PATH
 
       export STDML_COLLECTIVE_USE_ASYNC=1
-      kungfu-run -q -np 4 ./bin/bench-all-reduce 1024x100 10 3
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
     displayName: Bench
