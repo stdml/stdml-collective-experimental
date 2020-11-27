@@ -7,6 +7,7 @@ enum runtime_type {
     rt_thread,
     rt_async,
     rt_coro,
+    rt_go,
 };
 
 struct system_config {

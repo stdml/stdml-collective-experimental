@@ -55,8 +55,8 @@ struct send {
     }
 };
 
-void run_graphs(session *sess, const workspace &w,
-                const std::vector<const graph *> &gs)
+void run_graphs_multi_thread(session *sess, const workspace &w,
+                             const std::vector<const graph *> &gs)
 {
     const auto &peers = sess->peers();
     auto rank = sess->rank();
@@ -81,13 +81,14 @@ void run_graphs(session *sess, const workspace &w,
     }
 }
 
-size_t run_graph_pair_list(session *sess, const workspace &w,
-                           const graph_pair_list &gps, size_t chunk_size)
+size_t run_graph_pair_list_multi_thread(session *sess, const workspace &w,
+                                        const graph_pair_list &gps,
+                                        size_t chunk_size)
 {
     const auto pw = split_work(w, gps, chunk_size);
     const auto f = [&](auto &wgp) {
         const auto &[w, gp] = wgp;
-        run_graphs(sess, w, gp);
+        run_graphs_multi_thread(sess, w, gp);
     };
     // don't use thread pool here
     fmap(std::execution::par, f, pw);

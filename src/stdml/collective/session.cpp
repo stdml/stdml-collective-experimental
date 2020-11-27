@@ -19,8 +19,6 @@
 
 namespace stdml::collective
 {
-extern bool parse_env_bool(const std::string &s);
-
 session::session(system_config config, size_t rank, peer_list peers,
                  mailbox *mailbox, slotbox *slotbox,
                  rchan::client_pool *client_pool, strategy s)
@@ -32,14 +30,18 @@ session::session(system_config config, size_t rank, peer_list peers,
       slotbox_(slotbox),
       client_pool_(client_pool)
 {
-    if (parse_env_bool("STDML_COLLECTIVE_USE_THREAD_POOL")) {
+    if (config_.thread_pool_size > 0) {
         log() << "using thread pool";
-        pool_.reset(sync::thread_pool::New(3));
-        runtime_.reset(runtime::New(8));
+        pool_.reset(sync::thread_pool::New(config_.thread_pool_size));
     } else {
         log() << "not using thread pool";
     }
-    // set_affinity(rank_, peers.size());  // FIXME: use local
+    if (config_.rt == rt_async) {
+        runtime_.reset(runtime::New(8));
+    }
+    if (config_.use_affinity) {
+        set_affinity(rank_, peers_.size());  // FIXME: use local
+    }
     barrier();
 }
 
@@ -57,21 +59,25 @@ void session::broadcast(const void *input, void *output, size_t count, dtype dt,
         .op = sum,  // not used
         .name = std::move(name),
     };
-    run_graphs(this, w, {&all_reduce_topo_.pairs[0].broadcast_graph});
+    run_graphs_multi_thread(this, w,
+                            {&all_reduce_topo_.pairs[0].broadcast_graph});
 }
 
 void session::all_reduce(const workspace &w)
 {
+    const auto f = [sess = this] {
+        if (sess->config_.rt == rt_async) {
+            return run_graph_pair_list_async;
+        }
+        if (sess->config_.rt == rt_go) {
 #if STDML_COLLECTIVE_HAVE_GO_RUNTIME
-    bool use_go_rt = parse_env_bool("STDML_COLLECTIVE_USE_GO_RUNTIME");
-    if (use_go_rt) {
-        constexpr auto f = run_graph_pair_list_go_rt;
-        f(this, w, all_reduce_topo_, 1 << 20);
-        return;
-    }
+            return run_graph_pair_list_go_rt;
+#else
+            throw std::runtime_error("go runtime not built");
 #endif
-    bool async = parse_env_bool("STDML_COLLECTIVE_USE_ASYNC");
-    const auto f = async ? run_graph_pair_list_async : run_graph_pair_list;
+        }
+        return run_graph_pair_list_multi_thread;
+    }();
     f(this, w, all_reduce_topo_, 1 << 20);
 }
 

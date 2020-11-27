@@ -21,7 +21,7 @@
 namespace stdml::collective
 {
 extern std::string safe_getenv(const char *name);
-extern std::optional<int> parse_env_int(const std::string &s);
+extern std::optional<int> parse_env_int(const char *name);
 
 static peer *__peer = nullptr;
 

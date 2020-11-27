@@ -141,8 +141,12 @@ class session
 std::vector<std::pair<workspace, std::vector<const graph *>>>
 split_work(const workspace &w, const graph_pair_list &gps, size_t chunk_size);
 
-size_t run_graph_pair_list(session *sess, const workspace &w,
-                           const graph_pair_list &gps, size_t chunk_size);
+void run_graphs_multi_thread(session *sess, const workspace &w,
+                             const std::vector<const graph *> &gs);
+
+size_t run_graph_pair_list_multi_thread(session *sess, const workspace &w,
+                                        const graph_pair_list &gps,
+                                        size_t chunk_size);
 
 size_t run_graph_pair_list_async(session *sess, const workspace &w,
                                  const graph_pair_list &gps, size_t chunk_size);

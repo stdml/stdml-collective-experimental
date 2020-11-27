@@ -5,7 +5,7 @@
 
 namespace stdml::collective
 {
-extern bool parse_env_bool(const std::string &s);
+extern bool parse_env_bool(const char *);
 }
 
 namespace stdml::collective::rchan
