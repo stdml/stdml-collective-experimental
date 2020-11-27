@@ -24,15 +24,17 @@ struct io_some;
 
 template <>
 struct io_some<io_read> {
+    using ptr_type = void *;
+
     template <typename Socket>
-    auto operator()(Socket &sock, void *ptr, size_t n)
+    auto operator()(Socket &sock, ptr_type ptr, size_t n)
     {
         namespace net = std::experimental::net;
         return sock.read_some(net::buffer(ptr, n));
     }
 
     template <typename Socket>
-    auto operator()(Socket &sock, void *ptr, size_t n, std::error_code &ec)
+    auto operator()(Socket &sock, ptr_type ptr, size_t n, std::error_code &ec)
     {
         namespace net = std::experimental::net;
         return sock.read_some(net::buffer(ptr, n), ec);
@@ -41,16 +43,17 @@ struct io_some<io_read> {
 
 template <>
 struct io_some<io_write> {
+    using ptr_type = const void *;
+
     template <typename Socket>
-    auto operator()(Socket &sock, const void *ptr, size_t n)
+    auto operator()(Socket &sock, ptr_type ptr, size_t n)
     {
         namespace net = std::experimental::net;
         return sock.write_some(net::buffer(ptr, n));
     }
 
     template <typename Socket>
-    auto operator()(Socket &sock, const void *ptr, size_t n,
-                    std::error_code &ec)
+    auto operator()(Socket &sock, ptr_type ptr, size_t n, std::error_code &ec)
     {
         namespace net = std::experimental::net;
         return sock.write_some(net::buffer(ptr, n), ec);
@@ -64,7 +67,7 @@ template <typename Socket>
 class base_ioutil<Socket, false>
 {
     template <io_type iot>
-    static void io_exact(Socket &socket, void *ptr, size_t n)
+    static void io_exact(Socket &socket, io_some<iot>::ptr_type ptr, size_t n)
     {
         namespace net = std::experimental::net;
         while (n > 0) {
@@ -102,7 +105,7 @@ class base_ioutil<Socket, false>
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        io_exact<io_write>(socket, (void *)ptr, n);
+        io_exact<io_write>(socket, ptr, n);
     }
 };
 
@@ -114,8 +117,8 @@ class io_exact_task : public task
     size_t n_;
 
   public:
-    io_exact_task(Socket &socket, void *ptr, size_t n)
-        : socket_(socket), ptr_(reinterpret_cast<char *>(ptr)), n_(n)
+    io_exact_task(Socket &socket, io_some<iot>::ptr_type ptr, size_t n)
+        : socket_(socket), ptr_((char *)ptr), n_(n)
     {
     }
 
@@ -150,7 +153,7 @@ template <typename Socket>
 class base_ioutil<Socket, true>
 {
     template <io_type iot>
-    static void io_exact(Socket &socket, void *ptr, size_t n)
+    static void io_exact(Socket &socket, io_some<iot>::ptr_type ptr, size_t n)
     {
         while (n > 0) {
             std::error_code ec;
@@ -181,8 +184,8 @@ class base_ioutil<Socket, true>
     static std::unique_ptr<task> new_write_task(Socket &socket, const void *ptr,
                                                 size_t n)
     {
-        return std::make_unique<io_exact_task<Socket, io_write>>(
-            socket, (void *)ptr, n);
+        return std::make_unique<io_exact_task<Socket, io_write>>(socket, ptr,
+                                                                 n);
     }
 
     static void read(Socket &socket, void *ptr, size_t n)
@@ -192,7 +195,7 @@ class base_ioutil<Socket, true>
 
     static void write(Socket &socket, const void *ptr, size_t n)
     {
-        io_exact<io_write>(socket, (void *)ptr, n);
+        io_exact<io_write>(socket, ptr, n);
     }
 };
 
