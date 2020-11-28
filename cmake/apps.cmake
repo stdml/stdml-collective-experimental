@@ -1,0 +1,1 @@
+ADD_BINARY(apps/stdml_collective_bench_send_recv.cpp)

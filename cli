@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+./bin/stdml-collective-bench-send-recv c 127.0.0.1:9999 1024
+./bin/stdml-collective-bench-send-recv c 127.0.0.1:9999 10240
+
+for i in $(seq 10); do
+    ./bin/stdml-collective-bench-send-recv c 127.0.0.1:9999 10240000 &
+done
+wait

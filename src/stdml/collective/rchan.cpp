@@ -5,8 +5,6 @@
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/ioutil.hpp>
 #include <stdml/bits/collective/log.hpp>
-#include <stdml/bits/collective/mailbox.hpp>
-#include <stdml/bits/collective/peer.hpp>
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 
@@ -19,15 +17,69 @@ namespace net = std::experimental::net;
 
 namespace stdml::collective::rchan
 {
+class message_reader_impl : public message_reader
+{
+    using tcp_socket = net::ip::tcp::socket;
+    using ioutil = basic_ioutil<tcp_socket>;
+
+    tcp_socket *socket_;
+    uint32_t len_;
+    bool consumed_;
+
+  public:
+    message_reader_impl(tcp_socket *socket)
+        : socket_(socket), len_(0), consumed_(false)
+    {
+    }
+
+    // ~message_reader_impl()
+    // {
+    //     if (!consumed_) {
+    //         // error: ‘throw’ will always call ‘terminate’
+    //         [-Werror=terminate]
+    //         // throw std::runtime_error("message body not consumed");
+    //         fprintf(stderr, "message body not consumed\n");
+    //         exit(1);
+    //     }
+    // }
+
+    std::optional<received_header> read_header() override
+    {
+        received_header hdr;
+        std::error_code ec;
+        ioutil::read(*socket_, hdr.name_len, ec);
+        if (ec) {
+            return {};
+        }
+        hdr.name.resize(hdr.name_len);
+        ioutil::read(*socket_, hdr.name.data(), hdr.name_len);
+        ioutil::read(*socket_, hdr.flags);
+        ioutil::read(*socket_, hdr.len);
+        len_ = hdr.len;
+        return hdr;
+    }
+
+    bool read_body(void *data) override
+    {
+        STDML_COLLECTIVE_PROFILE_RATE(__func__, len_);
+        ioutil::read(*socket_, data, len_);
+        consumed_ = true;
+        return true;
+    }
+};
+
 class connection_impl : public connection
 {
     using tcp_endpoint = net::ip::tcp::endpoint;
     using tcp_socket = net::ip::tcp::socket;
     using ioutil = basic_ioutil<tcp_socket>;
 
+    rchan::conn_type type_;
+    peer_id src_;
+
     std::mutex mu_;
     net::io_context ctx_;
-    rchan::conn_type type_;
+
     tcp_socket socket_;
 
     static void wait_connect(tcp_socket &socket, const tcp_endpoint &ep)
@@ -46,10 +98,15 @@ class connection_impl : public connection
         }
     }
 
+    connection_impl(rchan::conn_type type, peer_id src, tcp_socket socket)
+        : type_(type), src_(src), socket_(std::move(socket))
+    {
+    }
+
   public:
     connection_impl(const peer_id remote, const rchan::conn_type type,
                     const peer_id local)
-        : type_(type), socket_(ctx_)
+        : type_(type), src_(local), socket_(ctx_)
     {
         const auto addr = net::ip::make_address(remote.hostname().c_str());
         const tcp_endpoint ep(addr, remote.port);
@@ -66,9 +123,36 @@ class connection_impl : public connection
         log() << "upgraded to" << remote << "@" << type;
     }
 
+    static connection_impl *upgrade_from(tcp_socket socket)
+    {
+        conn_header h;
+        ioutil::read(socket, h);
+        peer_id src = {
+            .ipv4 = h.src_ipv4,
+            .port = h.src_port,
+        };
+        return new connection_impl(h.type, src, std::move(socket));
+    }
+
     ~connection_impl()
     {
         socket_.close();
+    }
+
+    conn_type type() const override
+    {
+        return type_;
+    }
+
+    peer_id src() const override
+    {
+        return src_;
+    }
+
+    std::unique_ptr<message_reader> next() override
+    {
+        auto p = new message_reader_impl(&socket_);
+        return std::unique_ptr<message_reader>(p);
     }
 
     void send(const char *name, const void *data, size_t size,
@@ -95,149 +179,12 @@ class connection_impl : public connection
     }
 };
 
-connection *connection::dial(const peer_id remote, const rchan::conn_type type,
-                             const peer_id local)
+std::unique_ptr<connection> connection::dial(const peer_id remote,
+                                             const rchan::conn_type type,
+                                             const peer_id local)
 {
-    return new connection_impl(remote, type, local);
-}
-
-class message_reader_impl : public message_reader
-{
-    using tcp_socket = net::ip::tcp::socket;
-    using ioutil = basic_ioutil<tcp_socket>;
-
-    tcp_socket *socket_;
-    uint32_t len_;
-
-  public:
-    message_reader_impl(tcp_socket *socket) : socket_(socket), len_(0)
-    {
-    }
-
-    std::optional<received_header> read_header() override
-    {
-        received_header hdr;
-        std::error_code ec;
-        ioutil::read(*socket_, hdr.name_len, ec);
-        if (ec) {
-            return {};
-        }
-        hdr.name.resize(hdr.name_len);
-        ioutil::read(*socket_, hdr.name.data(), hdr.name_len);
-        ioutil::read(*socket_, hdr.flags);
-        ioutil::read(*socket_, hdr.len);
-        len_ = hdr.len;
-        return hdr;
-    }
-
-    bool read_body(void *data) override
-    {
-        STDML_COLLECTIVE_PROFILE_RATE(__func__, len_);
-        ioutil::read(*socket_, data, len_);
-        return true;
-    }
-};
-
-class default_msg_handler_impl : public msg_handler
-{
-    using tcp_socket = net::ip::tcp::socket;
-
-  public:
-    bool operator()(const peer_id &src, void *_socket) override
-    {
-        tcp_socket &socket = *(reinterpret_cast<tcp_socket *>(_socket));
-        message_reader_impl reader(&socket);
-        auto mh = reader.read_header();
-        if (!mh.has_value()) {
-            return false;
-        }
-        buffer b = alloc_buffer(mh->len);
-        reader.read_body(b.data.get());
-        return true;
-    }
-};
-
-template <conn_type type>
-class msg_handler_impl;
-
-template <>
-class msg_handler_impl<conn_collective> : public msg_handler
-{
-    using tcp_socket = net::ip::tcp::socket;
-
-    mailbox *mailbox_;
-    slotbox *slotbox_;
-
-  public:
-    msg_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
-    {
-    }
-
-    bool operator()(const peer_id &src, void *_socket) override
-    {
-        tcp_socket &socket = *(reinterpret_cast<tcp_socket *>(_socket));
-        message_reader_impl reader(&socket);
-
-        auto mh = reader.read_header();
-        if (!mh.has_value()) {
-            return false;
-        }
-
-        if (mh->flags & rchan::message_header::wait_recv_buf) {
-            slotbox::S *s = slotbox_->require(src, mh->name);
-            void *ptr = s->waitQ.get();
-            reader.read_body(ptr);
-            s->recvQ.put(ptr);
-        } else {
-            buffer b = alloc_buffer(mh->len);
-            reader.read_body(b.data.get());
-            mailbox::Q *q = mailbox_->require(src, mh->name);
-            q->put(std::move(b));
-        }
-        return true;
-    }
-};
-
-class conn_handler_impl : public conn_handler
-{
-    using tcp_socket = net::ip::tcp::socket;
-
-    mailbox *mailbox_;
-    slotbox *slotbox_;
-
-    std::map<conn_type, std::unique_ptr<msg_handler>> msg_handlers_;
-
-  public:
-    conn_handler_impl(mailbox *mb, slotbox *sb) : mailbox_(mb), slotbox_(sb)
-    {
-        msg_handlers_[conn_collective].reset(
-            new msg_handler_impl<conn_collective>(mailbox_, slotbox_));
-    }
-
-    size_t operator()(const peer_id src, conn_type type, tcp_socket socket)
-    {
-        // socket.native_non_blocking(true);
-        default_msg_handler_impl hh;
-        msg_handler *h = &hh;
-        auto &handler = msg_handlers_.at(type);
-        if (handler.get()) {
-            h = handler.get();
-        }
-        int i = 0;
-        for (;; ++i) {
-            const bool ok = (*h)(src, &socket);
-            if (!ok) {
-                break;
-            }
-        }
-        socket.close();
-        return i;
-    }
-};
-
-conn_handler *conn_handler::New(mailbox *mb, slotbox *sb)
-{
-    return new conn_handler_impl(mb, sb);
+    return std::unique_ptr<connection>(
+        new connection_impl(remote, type, local));
 }
 
 class server_impl : public server
@@ -248,7 +195,7 @@ class server_impl : public server
     using ioutil = basic_ioutil<tcp_socket>;
 
     const peer_id self_;
-    conn_handler_impl *handler_;
+    conn_handler *handler_;
 
     net::io_context ctx_;
     tcp_acceptor acceptor_;
@@ -272,25 +219,12 @@ class server_impl : public server
         }
     }
 
-    static std::pair<peer_id, rchan::conn_type> upgrade(tcp_socket &socket)
-    {
-        conn_header h;
-        ioutil::read(socket, h);
-        peer_id src = {
-            .ipv4 = h.src_ipv4,
-            .port = h.src_port,
-        };
-        log() << "got connection of type" << h.type << "from" << src;
-        return std::make_pair(src, h.type);
-    }
-
     void handle(tcp_socket socket)
     {
         handle_threads_.emplace_back(
             [h = handler_, socket = std::move(socket)]() mutable {
-                const auto [src, type] = upgrade(socket);
-                auto n = (*h)(src, type, std::move(socket));
-                log() << "handle finished after" << n << "messages";
+                auto conn = connection_impl::upgrade_from(std::move(socket));
+                (*h)(std::unique_ptr<connection>(conn));
             });
     }
 
@@ -327,7 +261,7 @@ class server_impl : public server
     }
 
   public:
-    server_impl(const peer_id self, conn_handler_impl *handler)
+    server_impl(const peer_id self, conn_handler *handler)
         : self_(self),
           handler_(handler),
           ctx_(std::thread::hardware_concurrency()),
@@ -373,8 +307,8 @@ class server_impl : public server
     }
 };
 
-server *server::New(const peer_id self, conn_handler *handler)
+std::unique_ptr<server> server::New(const peer_id self, conn_handler *handler)
 {
-    return new server_impl(self, dynamic_cast<conn_handler_impl *>(handler));
+    return std::unique_ptr<server>(new server_impl(self, handler));
 }
 }  // namespace stdml::collective::rchan

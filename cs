@@ -9,5 +9,6 @@ pid=$!
 
 ./bin/example-rchan c
 
-sleep 3
-kill -s INT $pid
+kill -s TERM $pid
+
+echo "killed"

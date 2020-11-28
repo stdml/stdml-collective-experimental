@@ -5,6 +5,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(LIBRARY_OUTPUT_PATH lib)
 
 FIND_PACKAGE(Threads REQUIRED)
+INCLUDE(cmake/build_info.cmake)
 INCLUDE(cmake/common.cmake)
 INCLUDE(cmake/strict.cmake)
 
@@ -32,6 +33,7 @@ ENDIF()
 OPTION(BUILD_TESTS "Build tests." OFF)
 
 INCLUDE(cmake/lib.cmake)
+INCLUDE(cmake/apps.cmake)
 INCLUDE(cmake/examples.cmake)
 IF(BUILD_TESTS)
     INCLUDE(cmake/tests.cmake)

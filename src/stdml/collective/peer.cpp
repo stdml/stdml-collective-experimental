@@ -22,6 +22,7 @@ namespace stdml::collective
 {
 extern std::string safe_getenv(const char *name);
 extern std::optional<int> parse_env_int(const char *name);
+extern rchan::conn_handler *new_collective_handler(mailbox *mb, slotbox *sb);
 
 static peer *__peer = nullptr;
 
@@ -58,7 +59,7 @@ peer::peer(system_config config, peer_id self, peer_list init_peers,
       init_strategy_(init_strategy),
       mailbox_(new mailbox),
       slotbox_(new slotbox),
-      handler_(rchan::conn_handler::New(mailbox_.get(), slotbox_.get())),
+      handler_(new_collective_handler(mailbox_.get(), slotbox_.get())),
       client_pool_(new rchan::client_pool(self_))
 {
     // register_cleanup_handlers(this);  // doesn't work
@@ -132,7 +133,7 @@ peer peer::from_env()
 
 void peer::start()
 {
-    server_.reset(rchan::server::New(self_, handler_.get()));
+    server_ = rchan::server::New(self_, handler_.get());
     server_->start();
 }
 
