@@ -221,7 +221,7 @@ void test_single_thread()
 
 int main()
 {
-    stdml::collective::enabled_log();
+    stdml::collective::enable_log();
     test_http();
     test_single_thread();
     return 0;

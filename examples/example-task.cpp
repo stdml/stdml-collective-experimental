@@ -18,7 +18,7 @@ stdml::collective::task *new_seq_task(const std::string m1,
 
 int main()
 {
-    stdml::collective::enabled_log();
+    stdml::collective::enable_log();
     stdml::collective::task_builder b;
     b << new_seq_task("11", "12");
     b << new_seq_task("21", "22");

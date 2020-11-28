@@ -16,7 +16,7 @@ void signal_handler(int sig)
 
 int main()
 {
-    stdml::collective::enabled_log();
+    stdml::collective::enable_log();
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session sess = peer.join();
 

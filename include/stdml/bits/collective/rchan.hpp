@@ -110,6 +110,8 @@ class client_pool
 class server
 {
   public:
+    virtual void serve() = 0;
+
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual ~server() = default;

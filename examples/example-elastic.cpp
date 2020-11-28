@@ -70,7 +70,7 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
 
 int main()
 {
-    stdml::collective::enabled_log();
+    stdml::collective::enable_log();
     std::map<int, int> schedule{
         {10, 1}, {20, 2}, {30, 3}, {40, 1}, {50, 4},
     };

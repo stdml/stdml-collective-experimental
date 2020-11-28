@@ -341,6 +341,11 @@ class server_impl : public server
         stop();
     }
 
+    void serve() override
+    {
+        serve(self_);
+    }
+
     void start() override
     {
         log() << "starting server ..";

@@ -48,5 +48,5 @@ enum log_level {
 };
 
 logger log(log_level level = INFO);
-extern void enabled_log();
+extern void enable_log();
 }  // namespace stdml::collective

@@ -42,7 +42,7 @@ logger log(log_level level)
     return logger(std::cerr);
 }
 
-void enabled_log()
+void enable_log()
 {
     logger::enabled_ = true;
 }
