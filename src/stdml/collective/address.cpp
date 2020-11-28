@@ -109,16 +109,22 @@ std::vector<std::byte> cluster_config::bytes() const
     static_assert(sizeof(peer_id) == 6);
 
     using N = uint32_t;
-    const size_t size_1 = sizeof(peer_id) * runners_.size();
-    const size_t size_2 = sizeof(peer_id) * workers_.size();
+    const size_t size_1 = sizeof(peer_id) * runners.size();
+    const size_t size_2 = sizeof(peer_id) * workers.size();
     const size_t size = sizeof(N) * 2 + size_1 + size_2;
 
     std::vector<std::byte> bs(size);
     std::byte *ptr = bs.data();
-    *(N *)(ptr + sizeof(N) * 0) = static_cast<N>(runners_.size());
-    *(N *)(ptr + sizeof(N) * 1) = static_cast<N>(runners_.size());
-    std::memcpy(ptr + sizeof(N) * 2, runners_.data(), size_1);
-    std::memcpy(ptr + sizeof(N) * 2 + size_1, workers_.data(), size_2);
+    *(N *)(ptr + sizeof(N) * 0) = static_cast<N>(runners.size());
+    *(N *)(ptr + sizeof(N) * 1) = static_cast<N>(workers.size());
+    std::memcpy(ptr + sizeof(N) * 2, runners.data(), size_1);
+    std::memcpy(ptr + sizeof(N) * 2 + size_1, workers.data(), size_2);
     return bs;
+}
+
+std::ostream &operator<<(std::ostream &os, const cluster_config &config)
+{
+    os << "runners: " << config.runners << ", workers: " << config.workers;
+    return os;
 }
 }  // namespace stdml::collective

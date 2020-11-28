@@ -57,7 +57,10 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
         }
 
         if (schedule.count(i) > 0) {
-            const auto [changed, detached] = peer.resize();
+            auto new_size = schedule.at(i);
+            log() << "apply resize schedule at" << i << "with new size"
+                  << new_size;
+            const auto [changed, detached] = peer.resize(sess, new_size);
             if (detached) {
                 break;
             }
@@ -71,10 +74,11 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
 int main()
 {
     stdml::collective::enable_log();
-    std::map<int, int> schedule{
-        {10, 1}, {20, 2}, {30, 3}, {40, 1}, {50, 4},
-    };
+    std::map<int, int> schedule;
+    for (int i = 0; i < 10; ++i) {
+        schedule[(i + 1) * 3] = i % 4 + 1;
+    }
     model m({1024, 1024});
-    elastic_train(100, m, schedule);
+    elastic_train(40, m, schedule);
     return 0;
 }

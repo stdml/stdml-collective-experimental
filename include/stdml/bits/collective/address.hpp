@@ -62,12 +62,22 @@ std::optional<peer_id> parse_peer_id(const std::string &s);
 
 std::optional<peer_list> parse_peer_list(const std::string &s);
 
-class cluster_config
-{
-    peer_list runners_;
-    peer_list workers_;
+struct cluster_config {
+    peer_list runners;
+    peer_list workers;
 
-  public:
+    cluster_config(peer_list runners, peer_list workers)
+        : runners(std::move(runners)), workers(std::move(workers))
+    {
+    }
+
     std::vector<std::byte> bytes() const;
+
+    bool operator==(const cluster_config &c) const
+    {
+        return runners == c.runners && workers == c.workers;
+    }
 };
+
+std::ostream &operator<<(std::ostream &os, const cluster_config &);
 }  // namespace stdml::collective

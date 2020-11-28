@@ -52,10 +52,11 @@ void register_cleanup_handlers(peer *peer)
 }
 
 peer::peer(system_config config, peer_id self, peer_list init_peers,
-           strategy init_strategy)
+           peer_list init_runners, strategy init_strategy)
     : config_(std::move(config)),
       self_(self),
       init_peers_(std::move(init_peers)),
+      init_runners_(std::move(init_runners)),
       init_strategy_(init_strategy),
       mailbox_(new mailbox),
       slotbox_(new slotbox),
@@ -69,7 +70,7 @@ peer peer::single()
 {
     const auto id = parse_peer_id("127.0.0.1:10000").value();
     auto config = parse_system_config_from_env();
-    return peer(std::move(config), id, {id});
+    return peer(std::move(config), id, {id}, {});
 }
 
 extern strategy parse_kungfu_startegy();
@@ -82,12 +83,19 @@ peer peer::from_kungfu_env()
     }
     auto peers = parse_peer_list(safe_getenv("KUNGFU_INIT_PEERS"));
     if (!peers) {
+        // FIXME: throw?
+        return single();
+    }
+    auto runners = parse_peer_list(safe_getenv("KUNGFU_INIT_RUNNERS"));
+    if (!runners) {
+        // FIXME: throw?
         return single();
     }
     auto config = parse_system_config_from_env();
     strategy s = parse_kungfu_startegy();
     log() << "using strategy" << s;
-    peer p(std::move(config), self.value(), std::move(peers.value()), s);
+    peer p(std::move(config), self.value(), std::move(peers.value()),
+           std::move(runners.value()), s);
     p.start();
     return p;
 }
@@ -105,7 +113,7 @@ peer peer::from_ompi_env()
     const auto ps = peer_list::gen(size.value());
     auto config = parse_system_config_from_env();
     auto self = ps[rank.value()];
-    peer p(std::move(config), self, std::move(ps));
+    peer p(std::move(config), self, std::move(ps), {});
     p.start();
     return p;
 }
@@ -150,18 +158,36 @@ session peer::join()
 {
     auto rank = std::find(init_peers_.begin(), init_peers_.end(), self_) -
                 init_peers_.begin();
-    session sess(config_, rank, init_peers_, mailbox_.get(), slotbox_.get(),
-                 client_pool_.get(), init_strategy_);
+    session sess(config_, rank, init_peers_, init_runners_, mailbox_.get(),
+                 slotbox_.get(), client_pool_.get(), init_strategy_);
     return sess;
 }
 
-peer::resize_result peer::resize()
+resize_result peer::resize(session &sess, size_t new_size)
 {
-    return {false, false};
+    propose_new_size(new_size);
+    return resize(sess);
 }
 
-peer::resize_result peer::resize(size_t)
+resize_result peer::resize(session &sess)
 {
-    return {false, false};
+    auto old_cluster = sess.cluster();
+    auto new_cluster = [&] {
+        for (;;) {
+            auto config = get_cluster_config();
+            auto digest = config.bytes();
+            if (sess.consistent(digest.data(), digest.size())) {
+                return config;
+            }
+            log() << "cluster config still not consistent";
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1s);
+        }
+    }();
+    if (old_cluster == new_cluster) {
+        log() << "ignore unchanged resize";
+        return {false, false};
+    }
+    return propose_cluster_config(new_cluster);
 }
 }  // namespace stdml::collective

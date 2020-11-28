@@ -4,6 +4,7 @@
 
 #include <stdml/bits/collective/address.hpp>
 #include <stdml/bits/collective/config.hpp>
+#include <stdml/bits/collective/elastic.hpp>
 #include <stdml/bits/collective/mailbox.hpp>
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/session.hpp>
@@ -16,6 +17,7 @@ class peer
 
     const peer_id self_;
     const peer_list init_peers_;
+    const peer_list init_runners_;
     const strategy init_strategy_;
 
     std::unique_ptr<mailbox> mailbox_;
@@ -27,7 +29,7 @@ class peer
     std::unique_ptr<rchan::client_pool> client_pool_;  //
 
     peer(system_config config, peer_id self, peer_list init_peers,
-         strategy init_strategy = star);
+         peer_list init_runners, strategy init_strategy = star);
 
   public:
     static peer single();
@@ -46,12 +48,7 @@ class peer
 
     session join();
 
-    struct resize_result {
-        bool changed;
-        bool detached;
-    };
-
-    resize_result resize();
-    resize_result resize(size_t);
+    resize_result resize(session &);
+    resize_result resize(session &, size_t);
 };
 }  // namespace stdml::collective
