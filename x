@@ -40,4 +40,5 @@ main() {
 # ./scripts/bench/small.sh
 
 # ./scripts/tsan/run.sh
-./scripts/bench/group.sh
+# ./scripts/bench/group.sh
+./scripts/bench/small.sh

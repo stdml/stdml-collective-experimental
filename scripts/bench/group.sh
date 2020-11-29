@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+. ./scripts/profile/measure.sh
+. ./scripts/bin/stdml-collective-run
+
 export STDML_COLLECTIVE_ENABLE_LOG=1
 
 cfg_flags() {
@@ -11,9 +14,6 @@ build() {
     ./configure $(cfg_flags)
     make -j $(nproc)
 }
-
-. ./scripts/profile/measure.sh
-. ./scripts/bin/stdml-collective-run
 
 bench_workload() {
     local workload=$1

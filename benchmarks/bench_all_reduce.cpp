@@ -139,8 +139,11 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
         }
         return metrics;
     };
-    run_stage("warmup", warmup_steps);
-    auto metrics = run_stage("step", steps);
+    {
+        LOG_SCOPE_LATENCY("warmup");
+        run_stage("warmup", warmup_steps);
+    }
+    auto metrics = LOG_EXPR_LATENCY(run_stage("step", steps));
     if (sess.rank() == 0) {
         std::cout << "FINAL RESULT: " << name << " " << show_rate(mean(metrics))
                   << " | " << peer.config() << std::endl;

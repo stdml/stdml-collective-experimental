@@ -85,6 +85,56 @@ class single_site_context
     }
 };
 
+template <typename Duration>
+static std::string show_duration(const Duration &d)
+{
+    std::stringstream ss;
+    ss << std::setprecision(4) << std::setw(6);
+    if (d < std::chrono::microseconds(1)) {
+        using D = std::chrono::duration<int64_t, std::nano>;
+        auto d1 = std::chrono::duration_cast<D>(d);
+        ss << d1.count() << "ns";
+    } else if (d < std::chrono::milliseconds(1)) {
+        using D = std::chrono::duration<float, std::micro>;
+        auto d1 = std::chrono::duration_cast<D>(d);
+        ss << d1.count() << "us";
+    } else if (d < std::chrono::seconds(1)) {
+        using D = std::chrono::duration<float, std::milli>;
+        auto d1 = std::chrono::duration_cast<D>(d);
+        ss << d1.count() << "ms";
+    } else {
+        using D = std::chrono::duration<float>;
+        auto d1 = std::chrono::duration_cast<D>(d);
+        ss << d1.count() << "s";
+    }
+    return ss.str();
+}
+
+class scope_latency_logger
+{
+    using clock = std::chrono::high_resolution_clock;
+    using instant = std::chrono::time_point<clock>;
+
+    std::string name_;
+    size_t seq_;
+    const instant t0_;
+
+  public:
+    scope_latency_logger(single_site_context &ctx, std::string name)
+        : name_(std::move(name)), seq_(ctx.begin()), t0_(clock::now())
+    {
+    }
+
+    ~scope_latency_logger()
+    {
+        auto t1 = clock::now();
+        std::chrono::duration<double> d = t1 - t0_;
+        std::cout << "#" << std::setw(8) << seq_                        //
+                  << "  |  took: " << std::setw(8) << show_duration(d)  //
+                  << "    @" << name_ << std::endl;
+    }
+};
+
 class scope_rate_logger
 {
     using clock = std::chrono::high_resolution_clock;
@@ -94,31 +144,6 @@ class scope_rate_logger
     size_t seq_;
     const instant t0_;
     const size_t payload_;
-
-    template <typename Duration>
-    static std::string show_duration(const Duration &d)
-    {
-        std::stringstream ss;
-        ss << std::setprecision(4) << std::setw(6);
-        if (d < std::chrono::microseconds(1)) {
-            using D = std::chrono::duration<int64_t, std::nano>;
-            auto d1 = std::chrono::duration_cast<D>(d);
-            ss << d1.count() << "ns";
-        } else if (d < std::chrono::milliseconds(1)) {
-            using D = std::chrono::duration<float, std::micro>;
-            auto d1 = std::chrono::duration_cast<D>(d);
-            ss << d1.count() << "us";
-        } else if (d < std::chrono::seconds(1)) {
-            using D = std::chrono::duration<float, std::milli>;
-            auto d1 = std::chrono::duration_cast<D>(d);
-            ss << d1.count() << "ms";
-        } else {
-            using D = std::chrono::duration<float>;
-            auto d1 = std::chrono::duration_cast<D>(d);
-            ss << d1.count() << "s";
-        }
-        return ss.str();
-    }
 
     static std::string show_rate(size_t size, std::chrono::duration<double> d)
     {
@@ -172,3 +197,14 @@ void stat_disable();
     static stdml::collective::rchan::single_site_context __scope_rate_ctx;     \
     stdml::collective::rchan::scope_rate_logger __scope_rate_logger(           \
         __scope_rate_ctx, name, payload)
+
+#define LOG_SCOPE_LATENCY(name)                                                \
+    static stdml::collective::rchan::single_site_context __scope_rate_ctx;     \
+    stdml::collective::rchan::scope_latency_logger __scope_latency_logger(     \
+        __scope_rate_ctx, name)
+
+#define LOG_EXPR_LATENCY(e)                                                    \
+    [&] {                                                                      \
+        LOG_SCOPE_LATENCY(#e);                                                 \
+        return (e);                                                            \
+    }()
