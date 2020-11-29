@@ -58,13 +58,15 @@ T mean(const std::vector<T> &xs)
 
 using C = std::chrono::high_resolution_clock;
 
-void bench_all_reduce_one(stdml::collective::session &session,
+void bench_all_reduce_one(stdml::collective::session &sess,
                           const std::string &name, std::vector<float> &x,
                           std::vector<float> &y)
 {
-    // TRACE_SCOPE(__func__);
+    // size_t multiplier = 4 * (sess.size() - 1);
+    // LOG_SCOPE_RATE(__func__, multiplier * x.size() * sizeof(float));
+
     auto t0 = C::now();
-    session.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
+    sess.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
     auto t1 = C::now();
     double d [[gnu::unused]] = (t1 - t0).count();
 }

@@ -30,9 +30,15 @@ class runtime
     virtual void par(std::vector<std::unique_ptr<task>> &tasks) = 0;
 };
 
+static int task_cnt = 0;
 class task
 {
   public:
+    task()
+    {
+        task_cnt++;
+    }
+
     virtual ~task() = default;
     virtual void poll() = 0;
     virtual bool finished() = 0;

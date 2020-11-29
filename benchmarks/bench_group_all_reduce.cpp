@@ -69,7 +69,7 @@ train_model(fake_cpu_model<float> &model, int rank, int size)
 {
     std::vector<int> permu(model.buffers.size());
     {
-        LOG_SCOPE_RATE("permu", size * 4);
+        LOG_SCOPE_RATE("permu", size * sizeof(int));
         const int shift = permu.size() / size * rank;
         std::iota(permu.begin(), permu.end(), 0);
         for (auto &i : permu) {

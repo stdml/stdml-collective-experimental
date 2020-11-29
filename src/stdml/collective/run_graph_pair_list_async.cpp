@@ -177,6 +177,7 @@ task *run_graphs_async(session *sess, const workspace *w,
 size_t run_graph_pair_list_async(session *sess, const workspace &w,
                                  const graph_pair_list &gps, size_t chunk_size)
 {
+    task_cnt = 0;
     const auto pw = split_work(w, gps, chunk_size);
     const auto f = [&](auto &wgp) {
         const auto &[w, gp] = wgp;
@@ -186,6 +187,7 @@ size_t run_graph_pair_list_async(session *sess, const workspace &w,
     if (pw.size() > 1) {
         log() << "splitted workspace into" << pw.size() << "parts";
     }
+    log() << "created" << task_cnt << "task";
     t->finish();
     delete t;
     return pw.size();
