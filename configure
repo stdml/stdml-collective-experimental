@@ -100,6 +100,13 @@ main() {
     export CXX=$(which g++-10)
     export CC=$(which gcc-10)
     parse_args $@
+
+    if [ "$ENABLE_ELASTIC" = 1 ]; then
+        cd src/stdml/collective/elastic
+        make
+        cd -
+    fi
+
     config_cmake
 }
 

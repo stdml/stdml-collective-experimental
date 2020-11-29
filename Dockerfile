@@ -14,6 +14,6 @@ ENV PATH /root/go/bin:${PATH}
 WORKDIR /src
 ADD . .
 
-RUN ./configure --release=latest --shared --disable-cxx11-abi
+RUN ./configure --release=latest --shared --disable-cxx11-abi --enable-elastic
 RUN make -j $(nproc) package && rm -fr release/_CPack_Packages
 # RUN ./scripts/run/example-1.sh
