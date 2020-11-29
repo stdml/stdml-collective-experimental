@@ -79,7 +79,8 @@ train_model(fake_cpu_model<float> &model)
             .name = b.name,
         };
         using namespace std::chrono_literals;
-        fs.push_back(make_delayed_future(w, 1ms));
+        // fs.push_back(make_delayed_future(w, 1ms));
+        fs.push_back(make_ready_future(w));
     }
     return fs;
 }
@@ -87,7 +88,8 @@ train_model(fake_cpu_model<float> &model)
 double bench_step(stdml::collective::session &sess,
                   fake_cpu_model<float> &model)
 {
-    // TRACE_SCOPE(__func__);
+    size_t multiplier = 4 * (sess.size() - 1);
+    LOG_SCOPE_RATE(__func__, multiplier * model.data_size);
     auto t0 = C::now();
     auto fs = train_model(model);
     sess.group_all_reduce(std::move(fs));
@@ -116,10 +118,10 @@ using stdml::collective::PRINT;
 void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
            int warmup_steps)
 {
-    const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
+    fake_cpu_model<float> model(sizes);
     log() << sizes.size() << "tensors";
-    log() << "total size" << tot * 4 <<  //
-        "(" << gigabytes(tot * 4) << " GiB)";
+    log() << "total size" << model.data_size <<  //
+        "(" << gigabytes(model.data_size) << " GiB)";
 
     // stdml::collective::rchan::stat_disable();
 
@@ -129,14 +131,13 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
     // stdml::collective::rchan::stat_enable();
 
     size_t multiplier = 4 * (sess.size() - 1);
-    fake_cpu_model<float> model(sizes);
 
     auto run_stage = [&](const char *name, int steps) {
         std::vector<double> metrics;
         for (auto i : std::views::iota(0, steps)) {
             log() << "bench step" << i;
             auto d = bench_step(sess, model);
-            double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
+            double metric = gigabytes(multiplier * model.data_size) / d;
             metrics.push_back(metric);
             if (sess.rank() == 0) {
                 log() << name << i + 1 << show_rate(metric);

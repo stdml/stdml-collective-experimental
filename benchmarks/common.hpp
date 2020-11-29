@@ -21,10 +21,12 @@ struct fake_cpu_buffer_t {
 
 template <typename T>
 struct fake_cpu_model {
+    size_t data_size;
     std::vector<fake_cpu_buffer_t<T>> buffers;
 
     fake_cpu_model(const std::vector<size_t> &sizes)
     {
+        data_size = sizeof(T) * std::accumulate(sizes.begin(), sizes.end(), 0);
         for (auto i : std::views::iota((size_t)0, sizes.size())) {
             std::string name = "variable:" + std::to_string(i);
             buffers.emplace_back(std::move(name), sizes[i]);
