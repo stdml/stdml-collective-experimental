@@ -45,4 +45,5 @@ main() {
     check_leak_distributed $test_prog
 }
 
+# $(dirname $0)/analysis-valgrind-result.rb result.xml
 main
