@@ -1,0 +1,191 @@
+#include <chrono>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include <stdml/bits/collective/stat.hpp>
+#include <stdml/collective>
+
+// #include <tracer/simple_log>
+
+#include "common.hpp"
+
+// DEFINE_TRACE_CONTEXTS;
+
+template <typename T>
+std::future<T> make_ready_future(T x)
+{
+    std::promise<T> p;
+    std::future<T> f = p.get_future();
+    p.set_value(std::move(x));
+    return f;
+}
+
+double gigabytes(size_t n)
+{
+    constexpr double gi = 1 << 30;
+    return n / gi;
+}
+
+std::string show_rate(double gibps)
+{
+    char line[64];
+    if (gibps >= 1) {
+        sprintf(line, "%.3f GiB/s", gibps);
+    } else {
+        sprintf(line, "%.3f GiB/s (%.3f MiB/s)", gibps, gibps * 1024);
+    }
+    return line;
+}
+
+template <typename T>
+void pprint(const std::vector<T> &xs)
+{
+    int i = 0;
+    for (const T &x : xs) {
+        if (i++) {
+            std::cout << ", ";
+        }
+        std::cout << x;
+    }
+    std::cout << std::endl;
+}
+
+template <typename T>
+T mean(const std::vector<T> &xs)
+{
+    return std::accumulate(xs.begin(), xs.end(), static_cast<T>(0)) / xs.size();
+}
+
+using C = std::chrono::high_resolution_clock;
+
+double bench_step(stdml::collective::session &sess,
+                  fake_cpu_model<float> &model)
+{
+    // TRACE_SCOPE(__func__);
+    auto t0 = C::now();
+
+    std::vector<std::future<stdml::collective::workspace>> fs;
+    for (auto &b : model.buffers) {
+        auto dt = stdml::collective::type<float>();
+        stdml::collective::workspace w = {
+            .send = b.send_buf.data(),
+            .recv = b.recv_buf.data(),
+            .count = b.send_buf.size(),
+            .dt = dt,
+            .op = stdml::collective::sum,
+            .name = b.name,
+        };
+        fs.push_back(make_ready_future(w));
+    }
+
+    sess.group_all_reduce(std::move(fs));
+
+    auto t1 = C::now();
+    std::chrono::duration<double> d = (t1 - t0);
+    return d.count();
+}
+
+std::vector<size_t> read_int_list(const char *filename)
+{
+    std::vector<size_t> sizes;
+    std::ifstream fs(filename);
+    if (!fs.is_open()) {
+        throw std::runtime_error("file not found");
+    }
+    size_t size;
+    while (fs >> size) {
+        sizes.push_back(size);
+    }
+    return sizes;
+}
+
+using stdml::collective::log;
+using stdml::collective::PRINT;
+
+void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
+           int warmup_steps)
+{
+    // pprint(sizes);
+    const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
+    log(PRINT) << sizes.size() << "tensors";
+    log(PRINT) << "total size" << tot * 4 <<  //
+        "(" << gigabytes(tot * 4) << " GiB)";
+
+    // stdml::collective::rchan::stat_disable();
+
+    auto peer = stdml::collective::peer::from_env();
+    stdml::collective::session sess = peer.join();
+
+    // stdml::collective::rchan::stat_enable();
+
+    size_t multiplier = 4 * (sess.size() - 1);
+    fake_cpu_model<float> model(sizes);
+
+    auto run_stage = [&](const char *name, int steps) {
+        std::vector<double> metrics;
+        for (auto i : std::views::iota(0, steps)) {
+            log(PRINT) << "bench step" << i;
+            auto d = bench_step(sess, model);
+            double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
+            metrics.push_back(metric);
+            if (sess.rank() == 0) {
+                std::cout << name << " " << i + 1 << " " << show_rate(metric)
+                          << std::endl;
+            }
+        }
+        return metrics;
+    };
+    run_stage("warmup", warmup_steps);
+    auto metrics = run_stage("step", steps);
+    if (sess.rank() == 0) {
+        std::cout << "FINAL RESULT: " << name << " " << show_rate(mean(metrics))
+                  << " | " << peer.config() << std::endl;
+    }
+}
+
+struct options {
+    std::string name;
+    std::vector<size_t> sizes;
+    int steps;
+    int warmup_steps;
+};
+
+options parse_args(int argc, char *argv[])
+{
+    std::vector<size_t> sizes;
+    std::string workload(argv[1]);
+    int x, n;
+    if (sscanf(workload.c_str(), "%dx%d", &x, &n) == 2) {
+        sizes.resize(n);
+        std::fill(sizes.begin(), sizes.end(), x);
+    } else {
+        sizes = read_int_list(workload.c_str());
+    }
+
+    const int steps = std::stoi(argv[2]);
+
+    int warmup_step = 0;
+    if (argc > 3) {
+        warmup_step = std::stoi(argv[3]);
+    }
+
+    return {workload, sizes, steps, warmup_step};
+}
+
+int main(int argc, char *argv[])
+{
+    // TRACE_SCOPE(__func__);
+    auto options = parse_args(argc, argv);
+    bench(options.name, options.sizes, options.steps, options.warmup_steps);
+    log(PRINT) << argv[0] << "finished";
+    return 0;
+}

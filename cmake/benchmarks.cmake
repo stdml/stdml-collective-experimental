@@ -1,4 +1,5 @@
 ADD_BINARY(benchmarks/bench_all_reduce.cpp)
+ADD_BINARY(benchmarks/bench_group_all_reduce.cpp)
 ADD_BINARY(benchmarks/bench-mpi-all-reduce.c)
 
 IF(HAVE_MPI)

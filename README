@@ -1,1 +1,10 @@
 collective communication library for stdml
+
+
+MPI compatiable interface (*)
+elastic support (*)
+async interface (*)
+unified interface for hetogeneous device (todo: CUDA, http://github.com/lgarithm/stdcuda)
+point to point APIs (todo)
+extentable protocol (*)
+dependency free, pure modern c++ (todo: cleanup go dependency)
