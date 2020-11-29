@@ -10,6 +10,8 @@ class task;
 class runtime
 {
   public:
+    virtual ~runtime() = default;
+
     static runtime *New(size_t m);
 
     virtual void par(std::vector<std::unique_ptr<task>> &tasks) = 0;
