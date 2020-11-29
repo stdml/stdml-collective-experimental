@@ -55,16 +55,17 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
                 sess.all_reduce(m.xs[i].data(), m.ys[i].data(), m.xs[i].size());
             }
         }
-
         if (schedule.count(i) > 0) {
             auto new_size = schedule.at(i);
             log() << "apply resize schedule at" << i << "with new size"
                   << new_size;
             const auto [changed, detached] = peer.resize(sess, new_size);
             if (detached) {
+                log() << "detached since step" << i;
                 break;
             }
             if (changed) {
+                // TODO: update session
                 synced = false;
             }
         }

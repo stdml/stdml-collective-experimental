@@ -5,3 +5,9 @@ program exits before signal handler finishes
 
 CLOSE_WAIT indicates that the remote endpoint (other side of the connection) has closed the connection.
 TIME_WAIT indicates that local endpoint (this side) has closed the connection.
+
+
+[127.0.0.1.10000::stdout] [D] failed to establish connection to #<1.0.0.127:7777> for 1 times: dial tcp 1.0.0.127:7777: connect: connection timed out
+[127.0.0.1.10001::stdout] [D] failed to establish connection to #<1.0.0.127:7777> for 1 times: dial tcp 1.0.0.127:7777: connect: connection timed out
+
+cause: byte order was wrong

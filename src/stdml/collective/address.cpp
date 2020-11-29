@@ -12,17 +12,17 @@ uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     uint32_t x;
     uint8_t *p = reinterpret_cast<uint8_t *>(&x);
-    p[0] = a;
-    p[1] = b;
-    p[2] = c;
-    p[3] = d;
+    p[3] = a;
+    p[2] = b;
+    p[1] = c;
+    p[0] = d;
     return x;
 }
 
 constexpr std::array<uint8_t, 4> unpack(uint32_t x)
 {
     uint8_t *p = reinterpret_cast<uint8_t *>(&x);
-    return {p[0], p[1], p[2], p[3]};
+    return {p[3], p[2], p[1], p[0]};
 }
 
 static std::vector<std::string> split(const std::string &text, const char sep)

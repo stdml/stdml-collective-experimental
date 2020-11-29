@@ -19,10 +19,11 @@
 
 namespace stdml::collective
 {
-session::session(system_config config, size_t rank, peer_list peers,
-                 peer_list runners, mailbox *mailbox, slotbox *slotbox,
-                 rchan::client_pool *client_pool, strategy s)
+session::session(system_config config, size_t version, size_t rank,
+                 peer_list peers, peer_list runners, mailbox *mailbox,
+                 slotbox *slotbox, rchan::client_pool *client_pool, strategy s)
     : config_(std::move(config)),
+      version_(version),
       rank_(rank),
       peers_(std::move((peers))),
       runners_(std::move(runners)),

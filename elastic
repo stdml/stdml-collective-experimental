@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+# export KUNGFU_CONFIG_LOG_LEVEL=debug
+
 rebuild() {
     cd src/stdml/collective/elastic
     make
@@ -15,6 +17,8 @@ kungfu_run_flags() {
     echo -logfile kungfu-run.log
 
     echo -np 2
+
+    echo -port 7777
 
     echo -w
     local port=9999

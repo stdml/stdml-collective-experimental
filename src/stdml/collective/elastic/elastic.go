@@ -10,7 +10,10 @@ import (
 	"reflect"
 	"unsafe"
 
+	"github.com/lsds/KungFu/srcs/go/kungfu/execution"
+	"github.com/lsds/KungFu/srcs/go/log"
 	"github.com/lsds/KungFu/srcs/go/plan"
+	"github.com/lsds/KungFu/srcs/go/rchannel/connection"
 	"github.com/lsds/KungFu/srcs/go/utils"
 )
 
@@ -64,34 +67,46 @@ func GoReadConfigServer(ptr unsafe.Pointer, ptrSize int) int {
 //export GoWriteConfigServer
 func GoWriteConfigServer(ptr unsafe.Pointer, ptrSize int, newSize int) {
 	cluster := parseCluster(ptr, ptrSize)
+	log.Errorf("parsed cluster from c++: %s\n", cluster.DebugString())
 	newCluster, err := cluster.Resize(newSize)
 	if err == nil {
 		writeConfigServer(os.Getenv(`KUNGFU_CONFIG_SERVER`), newCluster)
 	}
 }
 
+type Stage struct {
+	Version int
+	Cluster plan.Cluster
+}
+
+func (s Stage) Encode() []byte {
+	b := &bytes.Buffer{}
+	json.NewEncoder(b).Encode(s)
+	return b.Bytes()
+}
+
 //export GoProposeClusterConfig
 func GoProposeClusterConfig(ptr unsafe.Pointer, ptrSize int, newVersion int) {
-	// cluster := parseCluster(ptr, ptrSize)
-	// stage := runner.Stage{
-	// 	Version: newVersion,
-	// 	Cluster: cluster,
-	// }
-	// var notify execution.PeerFunc = func(ctrl plan.PeerID) error {
-	// 	ctx, cancel := context.WithTimeout(context.TODO(), config.WaitRunnerTimeout)
-	// 	defer cancel()
-	// 	// n, err := p.router.Wait(ctx, ctrl)
-	// 	// if err != nil {
-	// 	// 	return err
-	// 	// }
-	// 	// if n > 0 {
-	// 	// 	log.Warnf("%s is up after pinged %d times", ctrl, n+1)
-	// 	// }
-	// 	return p.router.Send(ctrl.WithName("update"), stage.Encode(), connection.ConnControl, 0)
-	// }
-	// if err := notify.Par(cluster.Runners); err != nil {
-	// 	utils.ExitErr(err)
-	// }
+	cluster := parseCluster(ptr, ptrSize)
+	stage := Stage{
+		Version: newVersion,
+		Cluster: cluster,
+	}
+	log.Debugf("state: %s", stage.Encode())
+	var notify execution.PeerFunc = func(ctrl plan.PeerID) error {
+		log.Errorf("sending to %s", ctrl)
+		var self plan.PeerID
+		conn := connection.New(ctrl, self, connection.ConnControl, 0, false)
+		buf := stage.Encode()
+		msg := connection.Message{
+			Length: uint32(len(buf)),
+			Data:   buf,
+		}
+		return conn.Send("update", msg, 0)
+	}
+	if err := notify.Par(cluster.Runners); err != nil {
+		utils.ExitErr(err)
+	}
 }
 
 func parseCluster(ptr unsafe.Pointer, ptrSize int) plan.Cluster {

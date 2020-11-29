@@ -15,6 +15,7 @@ class peer
 {
     const system_config config_;
 
+    const size_t init_version_;  // KUNGFU_INIT_CLUSTER_VERSION
     const peer_id self_;
     const peer_list init_peers_;
     const peer_list init_runners_;
@@ -28,8 +29,9 @@ class peer
     std::unique_ptr<rchan::server> server_;
     std::unique_ptr<rchan::client_pool> client_pool_;  //
 
-    peer(system_config config, peer_id self, peer_list init_peers,
-         peer_list init_runners, strategy init_strategy = star);
+    peer(system_config config, size_t init_version, peer_id self,
+         peer_list init_peers, peer_list init_runners,
+         strategy init_strategy = star);
 
   public:
     static peer single();

@@ -14,5 +14,6 @@ std::optional<cluster_config> get_cluster_config();
 
 void propose_new_size(const cluster_config &old_cluster, size_t new_size);
 
-resize_result propose_cluster_config(const cluster_config &config);
+resize_result propose_cluster_config(const cluster_config &config,
+                                     size_t new_version);
 }  // namespace stdml::collective

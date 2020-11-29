@@ -21,6 +21,7 @@ class session
     std::unique_ptr<sync::thread_pool> pool_;
 
     const system_config config_;
+    const size_t version_;
     const size_t rank_;
     const peer_list peers_;
     const peer_list runners_;
@@ -36,7 +37,7 @@ class session
 
     std::unique_ptr<runtime> runtime_;  // TODO: move to peer
 
-    session(system_config config, size_t rank, peer_list peers,
+    session(system_config config, size_t version, size_t rank, peer_list peers,
             peer_list runners, mailbox *mailbox, slotbox *slotbox,
             rchan::client_pool *client_pool, strategy s = star);
 
@@ -63,6 +64,11 @@ class session
     cluster_config cluster() const
     {
         return cluster_config(runners_, peers_);
+    }
+
+    size_t version() const
+    {
+        return version_;
     }
 
     void all_reduce(const workspace &w);
