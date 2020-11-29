@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -27,6 +28,7 @@ class stat
 
     struct event {
         std::string name;
+        std::thread::id tid0;
         instant t0;
         instant t1;
         size_t payload;

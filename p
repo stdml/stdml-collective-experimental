@@ -3,6 +3,7 @@ set -e
 
 cfg_flags() {
     echo --trace
+    echo --benchmarks
     true
 }
 

@@ -40,6 +40,7 @@ void stat::report()
         const std::chrono::duration<double> d = t1 - t0;
         const double rate = e.payload / 1e9 / d.count();
         std::cout << "``" << std::setw(20) << e.name  //
+                  << std::setw(24) << e.tid0          //
                   << std::setw(24) << t0.count()      //
                   << std::setw(24) << t1.count()      //
                   << std::setw(20) << std::fixed << std::setprecision(3)
@@ -53,7 +54,8 @@ void stat::record(std::string name, instant t0, instant t1, size_t payload)
 {
     if (enabled_) {
         std::lock_guard<std::mutex> _(mu_);
-        events_.emplace_back(std::move(name), t0, t1, payload);
+        events_.emplace_back(std::move(name), std::this_thread::get_id(), t0,
+                             t1, payload);
     }
 }
 

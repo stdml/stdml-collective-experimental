@@ -2,43 +2,22 @@
 set -e
 
 . ./scripts/profile/measure.sh
+. ./scripts/bin/stdml-collective-run
 
 export LD_LIBRARY_PATH=$HOME/local/opencv/lib
-
-kungfu_run_flags() {
-    local np=$1
-    local logdir=$2
-
-    echo -q
-    echo -logdir logs/profile/$logdir
-    echo -logfile kungfu-run.log
-    echo -v=false
-
-    echo -H "127.0.0.1:$np"
-    echo -np $np
-
-    echo -strategy STAR
-    # echo -strategy RING
-}
-
-kungfu_run() {
-    local np=$1
-    shift
-    local logdir=$1
-    shift
-
-    env KUNGFU_CONFIG_LOG_LEVEL=debug \
-        STDML_COLLECTIVE_ENABLE_LOG=1 \
-        STDML_COLLECTIVE_ENABLE_TRACE=1 \
-        STDML_COLLECTIVE_USE_ASYNC=0 \
-        kungfu-run $(kungfu_run_flags $np $logdir) $@
-}
 
 profile_one() {
     local size=$1
     local count=$2
     local name="${size}x${count}"
-    kungfu_run 4 $name ./bin/bench-all-reduce $name 4
+
+    export KUNGFU_CONFIG_LOG_LEVEL=debug
+    export STDML_COLLECTIVE_ENABLE_LOG=1
+    export STDML_COLLECTIVE_ENABLE_TRACE=1
+    export STDML_COLLECTIVE_USE_ASYNC=0
+    export STDML_COLLECTIVE_LOG_DIR=logs/profile/$name
+
+    stdml_collective_run_n 4 ./bin/bench-all-reduce $name 4
 }
 
 parse_timeline() {
@@ -46,7 +25,7 @@ parse_timeline() {
     local size=$2
     local filename=$3
     local key_size=$((size * 4))
-    grep '``' $filename | awk "{if (\$6 == \"$key_size\") print \$3, \$4, \$2 \"$suffix\"}"
+    grep '``' $filename | awk "{if (\$7 == \"$key_size\") print \$4, \$5, \$2 \"$suffix\"}"
 }
 
 style() {
@@ -104,9 +83,9 @@ export STDML_COLLECTIVE_USE_THREAD_POOL=0
 main
 cp 1024x100.png 0.png
 
-export STDML_COLLECTIVE_USE_THREAD_POOL=1
-main
-cp 1024x100.png 1.png
+# export STDML_COLLECTIVE_USE_THREAD_POOL=1
+# main
+# cp 1024x100.png 1.png
 
 # export STDML_COLLECTIVE_USE_THREAD_POOL=0
 # measure profile_one 1024 100
