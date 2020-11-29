@@ -86,7 +86,7 @@ class single_site_context
 };
 
 template <typename Duration>
-static std::string show_duration(const Duration &d)
+std::string show_duration(const Duration &d)
 {
     std::stringstream ss;
     ss << std::setprecision(4) << std::setw(6);

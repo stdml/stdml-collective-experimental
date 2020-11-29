@@ -39,6 +39,7 @@ main() {
 # export STDML_COLLECTIVE_USE_GO_RUNTIME=1
 # ./scripts/bench/small.sh
 
+# export STDML_COLLECTIVE_USE_ASYNC=1
 # ./scripts/tsan/run.sh
 # ./scripts/bench/group.sh
 ./scripts/bench/small.sh

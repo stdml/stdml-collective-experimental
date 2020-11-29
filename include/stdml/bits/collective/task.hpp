@@ -1,7 +1,20 @@
 #pragma once
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <vector>
+
+#include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/stat.hpp>
+
+#include <cxxabi.h>
+
+template <typename T>
+std::string tn()
+{
+    int status = 0;
+    return abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
+}
 
 namespace stdml::collective
 {
@@ -38,6 +51,50 @@ class task
             tasks.emplace_back(f(x));
         }
         return tasks;
+    }
+};
+
+template <typename Task>
+class monitored_task : public task
+{
+    using clock = std::chrono::high_resolution_clock;
+    using instant = std::chrono::time_point<clock>;
+
+    Task task_;
+    size_t polled_;
+    instant t0_;
+
+  public:
+    monitored_task(Task task)
+        : task_(std::move(task)), polled_(0), t0_(clock::now())
+    {
+    }
+
+    void poll() override
+    {
+        ++polled_;
+        task_.poll();
+        return;
+    }
+
+    bool finished() override
+    {
+        return task_.finished();
+    }
+
+    ~monitored_task()
+    {
+        summary();
+    }
+
+    void summary()
+    {
+        auto d = clock::now() - t0_;
+        auto s = std::to_string(polled_);
+        s.resize(8, ' ');
+        log() << "polled" << s << "times  | "  //
+              << "took" << rchan::show_duration(d) << " | "
+              << "@" + tn<Task>();
     }
 };
 

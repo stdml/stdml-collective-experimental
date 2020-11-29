@@ -116,9 +116,11 @@ struct recv {
     task *operator()(const peer_id &id) const
     {
         if (reduce) {
-            return new recv_onto(id, sess, state);
+            // return new recv_onto(id, sess, state);
+            return new monitored_task(recv_onto(id, sess, state));
         } else {
-            return new recv_into(id, sess, state);
+            // return new recv_into(id, sess, state);
+            return new monitored_task(recv_into(id, sess, state));
         }
     }
 };
@@ -135,7 +137,8 @@ struct send {
 
     task *operator()(const peer_id &id) const
     {
-        return new send_task(id, sess, state, reduce);
+        // return new send_task(id, sess, state, reduce);
+        return new monitored_task(send_task(id, sess, state, reduce));
     }
 };
 
