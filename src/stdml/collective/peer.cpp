@@ -158,30 +158,35 @@ void peer::stop()
 
 session peer::join()
 {
-    auto rank = std::find(init_peers_.begin(), init_peers_.end(), self_) -
-                init_peers_.begin();
+    auto rank = init_peers_.rank(self_);
     session sess(config_, init_version_, rank, init_peers_, init_runners_,
                  mailbox_.get(), slotbox_.get(), client_pool_.get(),
                  init_strategy_);
     return sess;
 }
 
-#ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
-resize_result peer::resize(session &sess, size_t new_size)
+std::unique_ptr<session> peer::join_elastic()
 {
-    auto old_cluster = sess.cluster();
+    auto sess = join();
+    return std::unique_ptr<session>(new session(std::move(sess)));
+}
+
+#ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
+resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
+{
+    auto old_cluster = sess->cluster();
     propose_new_size(old_cluster, new_size);
     return resize(sess);
 }
 
-resize_result peer::resize(session &sess)
+resize_result peer::resize(std::unique_ptr<session> &sess)
 {
-    auto old_cluster = sess.cluster();
+    auto old_cluster = sess->cluster();
     auto new_cluster = [&] {
         for (;;) {
             auto config = get_cluster_config().value_or(old_cluster);
             auto digest = config.bytes();
-            if (sess.consistent(digest.data(), digest.size())) {
+            if (sess->consistent(digest.data(), digest.size())) {
                 return config;
             }
             log() << "cluster config still not consistent";
@@ -193,16 +198,34 @@ resize_result peer::resize(session &sess)
         log() << "ignore unchanged resize";
         return {false, false};
     }
-    return propose_cluster_config(new_cluster, sess.version() + 1);
+    resize_result result = {
+        .changed = true,
+        .detached =
+            new_cluster.workers.rank(self_) >= new_cluster.workers.size(),
+    };
+    auto new_version = sess->version() + 1;
+    propose_cluster_config(new_cluster, new_version);
+    if (result.detached) {
+        return result;
+    }
+    if (result.changed) {
+        auto rank = new_cluster.workers.rank(self_);
+        auto new_sess =
+            new session(config_, new_version, rank, new_cluster.workers,
+                        new_cluster.runners, mailbox_.get(), slotbox_.get(),
+                        client_pool_.get(), init_strategy_);
+        sess.reset(new_sess);
+    }
+    return result;
 }
 #else
-resize_result peer::resize(session &sess, size_t new_size)
+resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
 {
     log() << __func__ << "NOT enabled";
     return {false, false};
 }
 
-resize_result peer::resize(session &sess)
+resize_result peer::resize(std::unique_ptr<session> &sess)
 {
     log() << __func__ << "NOT enabled";
     return {false, false};

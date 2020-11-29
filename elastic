@@ -13,10 +13,10 @@ rebuild() {
 
 kungfu_run_flags() {
     echo -q
-    echo -logdir logs
+    echo -logdir logs/elastic
     echo -logfile kungfu-run.log
 
-    echo -np 2
+    echo -np 1
 
     echo -port 7777
 
@@ -26,10 +26,19 @@ kungfu_run_flags() {
     echo -builtin-config-port $port
 }
 
+app_flags() {
+    echo --max-step=10
+    echo '1:2'
+    echo '3:1'
+    # echo '5:4'
+    # echo '7:1'
+}
+
 kungfu_run() {
     kungfu-run $(kungfu_run_flags) $@
 }
 
 rebuild
 
-kungfu_run ./bin/example-elastic
+rm -fr logs/elastic
+kungfu_run ./bin/example-elastic $(app_flags)

@@ -25,13 +25,11 @@ void propose_new_size(const cluster_config &old_cluster, size_t new_size)
     GoWriteConfigServer(bs.data(), bs.size(), (int)new_size);
 }
 
-resize_result propose_cluster_config(const cluster_config &new_cluster,
-                                     size_t new_version)
+void propose_cluster_config(const cluster_config &new_cluster,
+                            size_t new_version)
 {
     log() << __func__ << "called with" << new_cluster;
     auto bs = new_cluster.bytes();
     GoProposeClusterConfig(bs.data(), bs.size(), new_version);
-    // TODO: sent control message to all runners
-    return {false, false};
 }
 }  // namespace stdml::collective

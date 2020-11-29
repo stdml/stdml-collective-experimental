@@ -9,12 +9,9 @@
 
 #include <stdml/bits/collective/stat.hpp>
 #include <stdml/collective>
-// #include <tracer/simple_log>
 
 using stdml::collective::log;
 using stdml::collective::PRINT;
-
-// DEFINE_TRACE_CONTEXTS;
 
 struct model {
     using tensor = std::vector<float>;
@@ -31,28 +28,35 @@ struct model {
     }
 };
 
+int sync_step(stdml::collective::session &sess, int &i)
+{
+    int j = sess.all_reduce(i, stdml::collective::max);
+    log() << "sync step" << i << " -> " << j;
+    return j;
+}
+
 void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
 {
     auto peer = stdml::collective::peer::from_env();
     std::cout << "peer created" << std::endl;
 
-    stdml::collective::session sess = peer.join();
-    std::cout << "session joined, rank: " << sess.rank()
-              << ", size: " << sess.size() << std::endl;
+    auto sess = peer.join_elastic();
+    std::cout << "session joined, rank: " << sess->rank()
+              << ", size: " << sess->size() << std::endl;
 
     bool synced = false;
     for (int i = 0; i < max_step; ++i) {
         if (!synced) {
-            int j = sess.all_reduce(i, stdml::collective::max);
-            i = j;
+            i = sync_step(*sess, i);
             synced = true;
         }
-        log(PRINT) << "step" << i;
+        log() << "step" << i;
         {
             // TRACE_SCOPE("train step");
             for (auto i : std::views::iota((size_t)0, m.xs.size())) {
-                log(PRINT) << "  - tensor" << i;
-                sess.all_reduce(m.xs[i].data(), m.ys[i].data(), m.xs[i].size());
+                log() << "  - tensor" << i;
+                sess->all_reduce(m.xs[i].data(), m.ys[i].data(),
+                                 m.xs[i].size());
             }
         }
         if (schedule.count(i) > 0) {
@@ -65,6 +69,7 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
                 break;
             }
             if (changed) {
+                log() << "changed since step" << i;
                 // TODO: update session
                 synced = false;
             }
@@ -72,14 +77,38 @@ void elastic_train(int max_step, model m, const std::map<int, int> &schedule)
     }
 }
 
-int main()
+using schedule = std::map<int, int>;
+schedule parse_schedule(int argc, char *argv[], int &max_step)
+{
+    sscanf(argv[1], "--max-step=%d", &max_step);
+    schedule s;
+    for (int i = 2; i < argc; ++i) {
+        int k, v;
+        sscanf(argv[i], "%d:%d", &k, &v);
+        s[k] = v;
+    }
+    return s;
+}
+
+void log_args(int argc, char *argv[])
+{
+    for (int i = 0; i < argc; ++i) {
+        log() << "argv[" << i << "] =" << argv[i];
+    }
+}
+
+int main(int argc, char *argv[])
 {
     stdml::collective::enable_log();
-    std::map<int, int> schedule;
-    for (int i = 0; i < 10; ++i) {
-        schedule[(i + 1) * 3] = i % 4 + 1;
+    log_args(argc, argv);
+    int max_step = 0;
+    auto s = parse_schedule(argc, argv, max_step);
+    log() << "max-step: " << max_step;
+    for (auto &[k, v] : s) {
+        log() << "at step" << k << "resize to" << v;
     }
     model m({1024, 1024});
-    elastic_train(40, m, schedule);
+    elastic_train(max_step, m, s);
+    log() << "train finished";
     return 0;
 }

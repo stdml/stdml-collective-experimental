@@ -67,7 +67,7 @@ func GoReadConfigServer(ptr unsafe.Pointer, ptrSize int) int {
 //export GoWriteConfigServer
 func GoWriteConfigServer(ptr unsafe.Pointer, ptrSize int, newSize int) {
 	cluster := parseCluster(ptr, ptrSize)
-	log.Errorf("parsed cluster from c++: %s\n", cluster.DebugString())
+	log.Debugf("parsed cluster from c++: %s\n", cluster.DebugString())
 	newCluster, err := cluster.Resize(newSize)
 	if err == nil {
 		writeConfigServer(os.Getenv(`KUNGFU_CONFIG_SERVER`), newCluster)
@@ -94,7 +94,6 @@ func GoProposeClusterConfig(ptr unsafe.Pointer, ptrSize int, newVersion int) {
 	}
 	log.Debugf("state: %s", stage.Encode())
 	var notify execution.PeerFunc = func(ctrl plan.PeerID) error {
-		log.Errorf("sending to %s", ctrl)
 		var self plan.PeerID
 		conn := connection.New(ctrl, self, connection.ConnControl, 0, false)
 		buf := stage.Encode()

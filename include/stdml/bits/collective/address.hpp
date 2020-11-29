@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -54,6 +55,12 @@ class peer_list : public std::vector<peer_id>
     }
 
     static peer_list gen(size_t n);
+
+    size_t rank(const peer_id &id) const
+    {
+        auto pos = std::find(begin(), end(), id);
+        return pos - begin();
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const peer_list &ps);

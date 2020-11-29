@@ -50,7 +50,9 @@ class peer
 
     session join();
 
-    resize_result resize(session &);
-    resize_result resize(session &, size_t);
+    std::unique_ptr<session> join_elastic();
+
+    resize_result resize(std::unique_ptr<session> &);
+    resize_result resize(std::unique_ptr<session> &, size_t);
 };
 }  // namespace stdml::collective
