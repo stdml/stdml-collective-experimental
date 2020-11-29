@@ -2,6 +2,7 @@
 *.bmp
 *.events
 *.png
+*.xml
 /Makefile
 CPackConfig.cmake
 CPackSourceConfig.cmake

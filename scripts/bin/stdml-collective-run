@@ -1,9 +1,13 @@
-# -*- mode: shell -*-
+# -*- mode: sh -*-
 
 kungfu_run_flags() {
     local np=$1
+    local logdir=logs/stdml-collective
+    if [ ! -z "STDML_COLLECTIVE_LOG_DIR" ]; then
+        logdir=$STDML_COLLECTIVE_LOG_DIR
+    fi
     echo -q
-    echo -logdir logs/stdml-collective
+    echo -logdir $logdir
     echo -H "127.0.0.1:$np"
     echo -np $np
 }
