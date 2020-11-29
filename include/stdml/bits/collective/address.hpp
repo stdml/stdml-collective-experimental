@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -57,7 +58,7 @@ class peer_list : public std::vector<peer_id>
 
     peer_list operator-(const peer_list &ps)
     {
-        std::set s(ps.begin(), ps.end());
+        std::set<peer_id> s(ps.begin(), ps.end());
         peer_list d;
         std::copy_if(begin(), end(), std::back_inserter(d),
                      [&](auto id) { return s.count(id) == 0; });
