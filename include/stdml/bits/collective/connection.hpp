@@ -22,6 +22,10 @@ struct conn_header {
     uint32_t src_ipv4;
 };
 
+struct connection_ack {
+    uint32_t token;
+};
+
 inline void _test_conn_header()
 {
     static_assert(sizeof(conn_header) == 8);

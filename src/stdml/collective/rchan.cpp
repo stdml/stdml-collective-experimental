@@ -113,14 +113,23 @@ class connection_impl : public connection
         log() << "socket_.native_handle()" << socket_.native_handle();
         wait_connect(socket_, ep);
         set_default_client_socket_opts(socket_.native_handle());
+        log() << "connected to" << remote;
+        upgrade_to(socket_, type, local);
+        log() << "upgraded to" << remote << "@" << type;
+    }
+
+    static void upgrade_to(tcp_socket &socket, rchan::conn_type type,
+                           const peer_id self)
+    {
         conn_header h = {
             .type = type,
-            .src_port = local.port,
-            .src_ipv4 = local.ipv4,
+            .src_port = self.port,
+            .src_ipv4 = self.ipv4,
         };
-        log() << "connected to" << remote;
-        ioutil::write(socket_, h);
-        log() << "upgraded to" << remote << "@" << type;
+        ioutil::write(socket, h);
+        connection_ack ack;
+        ioutil::read(socket, ack);
+        // TODO: check ack
     }
 
     static connection_impl *upgrade_from(tcp_socket socket)
@@ -131,6 +140,10 @@ class connection_impl : public connection
             .ipv4 = h.src_ipv4,
             .port = h.src_port,
         };
+        connection_ack ack = {
+            .token = 0,  // TODO: token
+        };
+        ioutil::write(socket, ack);
         return new connection_impl(h.type, src, std::move(socket));
     }
 
