@@ -71,6 +71,8 @@ struct cluster_config {
     {
     }
 
+    static std::optional<cluster_config> from(const std::vector<std::byte> &bs);
+
     std::vector<std::byte> bytes() const;
 
     bool operator==(const cluster_config &c) const

@@ -1,9 +1,18 @@
 #!/bin/sh
 set -e
 
+rebuild() {
+    cd src/stdml/collective/elastic
+    make
+    cd -
+    ./configure --enable-elastic #--verbose
+    make -j $(nproc)
+}
+
 kungfu_run_flags() {
     echo -q
     echo -logdir logs
+    echo -logfile kungfu-run.log
 
     echo -np 2
 
@@ -16,5 +25,7 @@ kungfu_run_flags() {
 kungfu_run() {
     kungfu-run $(kungfu_run_flags) $@
 }
+
+rebuild
 
 kungfu_run ./bin/example-elastic

@@ -163,9 +163,11 @@ session peer::join()
     return sess;
 }
 
+#ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
 resize_result peer::resize(session &sess, size_t new_size)
 {
-    propose_new_size(new_size);
+    auto old_cluster = sess.cluster();
+    propose_new_size(old_cluster, new_size);
     return resize(sess);
 }
 
@@ -174,7 +176,7 @@ resize_result peer::resize(session &sess)
     auto old_cluster = sess.cluster();
     auto new_cluster = [&] {
         for (;;) {
-            auto config = get_cluster_config();
+            auto config = get_cluster_config().value_or(old_cluster);
             auto digest = config.bytes();
             if (sess.consistent(digest.data(), digest.size())) {
                 return config;
@@ -190,4 +192,17 @@ resize_result peer::resize(session &sess)
     }
     return propose_cluster_config(new_cluster);
 }
+#else
+resize_result peer::resize(session &sess, size_t new_size)
+{
+    log() << __func__ << "NOT enabled";
+    return {false, false};
+}
+
+resize_result peer::resize(session &sess)
+{
+    log() << __func__ << "NOT enabled";
+    return {false, false};
+}
+#endif
 }  // namespace stdml::collective

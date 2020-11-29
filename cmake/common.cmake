@@ -3,6 +3,8 @@ FUNCTION(ADD_BINARY target)
     STRING(REPLACE "_" "-" name ${name})
     ADD_EXECUTABLE(${name} ${target})
     TARGET_LINK_LIBRARIES(${name} stdml-collective)
+    # FIXME: don't link transitive deps IF(ENABLE_ELASTIC)
+    # TARGET_LINK_LIBRARIES(${name} LINK_INTERFACE_LIBRARIES stdml-collective)
     SET_PROPERTY(TARGET ${name} PROPERTY CXX_STANDARD 20)
 
     IF(HAVE_GO_RUNTIME)

@@ -17,6 +17,19 @@ FUNCTION(SET_LIB_STDML_COLLECTIVE_OPTIONS target)
         TARGET_COMPILE_DEFINITIONS(${target}
                                    PRIVATE -DSTDML_COLLECTIVE_HAVE_GO_RUNTIME=1)
     ENDIF()
+    IF(ENABLE_ELASTIC)
+        TARGET_SOURCES(
+            ${target}
+            PRIVATE ${CMAKE_SOURCE_DIR}/src/stdml/collective/elastic/elastic.cpp
+        )
+        TARGET_COMPILE_OPTIONS(${target}
+                               PRIVATE -DSTDML_COLLECTIVE_ENABLE_ELASTIC=1)
+        # TARGET_LINK_LIBRARIES(${target} kungfu-elastic-cgo)
+        TARGET_LINK_LIBRARIES(
+            ${target}
+            ${CMAKE_SOURCE_DIR}/src/stdml/collective/elastic/libkungfu-elastic-cgo.a
+        )
+    ENDIF()
 ENDFUNCTION()
 
 IF(BUILD_LIB)

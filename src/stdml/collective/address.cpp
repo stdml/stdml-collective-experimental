@@ -1,5 +1,6 @@
 #include <array>
 #include <cstring>
+#include <experimental/iterator>
 #include <iostream>
 #include <ranges>
 #include <sstream>
@@ -88,9 +89,10 @@ std::ostream &operator<<(std::ostream &os, const peer_id &id)
 
 std::ostream &operator<<(std::ostream &os, const peer_list &ps)
 {
-    for (const auto &p : ps) {
-        os << "[" << p << "]";
-    }
+    os << "[";
+    std::copy(ps.begin(), ps.end(),
+              std::experimental::make_ostream_joiner(os, ", "));
+    os << "]";
     return os;
 }
 
@@ -120,6 +122,27 @@ std::vector<std::byte> cluster_config::bytes() const
     std::memcpy(ptr + sizeof(N) * 2, runners.data(), size_1);
     std::memcpy(ptr + sizeof(N) * 2 + size_1, workers.data(), size_2);
     return bs;
+}
+
+std::optional<cluster_config>
+cluster_config::from(const std::vector<std::byte> &bs)
+{
+    const std::byte *ptr = bs.data();
+    using N = uint32_t;
+    uint32_t nw = *(N *)(ptr + sizeof(N) * 0);
+    uint32_t nr = *(N *)(ptr + sizeof(N) * 1);
+
+    peer_list runners(nw);
+    peer_list workers(nr);
+    const size_t size_1 = sizeof(peer_id) * runners.size();
+    const size_t size_2 = sizeof(peer_id) * workers.size();
+
+    if (size_1 + size_2 + sizeof(N) * 2 != bs.size()) {
+        return {};
+    }
+    std::memcpy(runners.data(), ptr + sizeof(N) * 2, size_1);
+    std::memcpy(workers.data(), ptr + sizeof(N) * 2 + size_1, size_2);
+    return cluster_config(std::move(runners), std::move(workers));
 }
 
 std::ostream &operator<<(std::ostream &os, const cluster_config &config)

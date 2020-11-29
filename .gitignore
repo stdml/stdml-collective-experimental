@@ -1,10 +1,11 @@
+*.a
 *.bmp
 *.events
 *.png
+/Makefile
 CPackConfig.cmake
 CPackSourceConfig.cmake
 CTestTestfile.cmake
-Makefile
 Testing
 _deps
 compile_commands.json
