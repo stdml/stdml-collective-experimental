@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iostream>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,15 @@ class peer_list : public std::vector<peer_id>
             ps.push_back(parent::operator[](i));
         }
         return ps;
+    }
+
+    peer_list operator-(const peer_list &ps)
+    {
+        std::set s(ps.begin(), ps.end());
+        peer_list d;
+        std::copy_if(begin(), end(), std::back_inserter(d),
+                     [&](auto id) { return s.count(id) == 0; });
+        return d;
     }
 
     static peer_list gen(size_t n);

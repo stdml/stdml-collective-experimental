@@ -209,6 +209,7 @@ resize_result peer::resize(std::unique_ptr<session> &sess)
         return result;
     }
     if (result.changed) {
+        client_pool_->reset_peers(old_cluster.workers - new_cluster.workers);
         auto rank = new_cluster.workers.rank(self_);
         auto new_sess =
             new session(config_, new_version, rank, new_cluster.workers,

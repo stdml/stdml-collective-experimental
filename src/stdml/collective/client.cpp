@@ -8,19 +8,19 @@ class client_impl : public client
     const peer_id self_;
     const rchan::conn_type type_;
 
-    std::unordered_map<uint64_t, std::unique_ptr<connection>> pool_;
+    std::unordered_map<uint64_t, std::unique_ptr<connection>> conns_;
     std::mutex mu_;
 
     connection *require(const peer_id target)
     {
-        std::lock_guard<std::mutex> _(mu_);
-        auto it = pool_.find(target.hash());
-        if (it != pool_.end()) {
+        std::lock_guard<std::mutex> _lk(mu_);
+        auto it = conns_.find(target.hash());
+        if (it != conns_.end()) {
             return it->second.get();
         }
         auto conn = connection::dial(target, type_, self_);  // FIXME: unblock
         auto p = conn.release();
-        pool_[target.hash()].reset(p);
+        conns_[target.hash()].reset(p);
         return p;
     }
 
@@ -28,6 +28,16 @@ class client_impl : public client
     client_impl(const peer_id self, const conn_type type)
         : self_(self), type_(type)
     {
+    }
+
+    void reset_peers(const peer_list &ids) override
+    {
+        std::lock_guard<std::mutex> _lk(mu_);
+        for (auto &id : ids) {
+            if (auto it = conns_.find(id.hash()); it != conns_.end()) {
+                conns_.erase(it);
+            }
+        }
     }
 
     std::unique_ptr<connection> dial(peer_id target, conn_type type) override
@@ -50,12 +60,20 @@ std::unique_ptr<client> client::New(peer_id target, conn_type type)
 
 client *client_pool::require(conn_type type)
 {
-    std::lock_guard _(mu_);
-    if (auto it = client_pool_.find(type); it != client_pool_.end()) {
+    std::lock_guard _lk(mu_);
+    if (auto it = clients_.find(type); it != clients_.end()) {
         return it->second.get();
     }
     auto client = new client_impl(self_, type);
-    client_pool_[type].reset(client);
+    clients_[type].reset(client);
     return client;
+}
+
+void client_pool::reset_peers(const peer_list &ids)
+{
+    std::lock_guard _lk(mu_);
+    for (auto &[type, client] : clients_) {
+        client->reset_peers(ids);
+    }
 }
 }  // namespace stdml::collective::rchan

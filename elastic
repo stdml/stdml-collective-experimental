@@ -30,8 +30,8 @@ app_flags() {
     echo --max-step=10
     echo '1:2'
     echo '3:1'
-    # echo '5:4'
-    # echo '7:1'
+    echo '5:4'
+    echo '7:1'
 }
 
 kungfu_run() {

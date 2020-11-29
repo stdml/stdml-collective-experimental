@@ -49,6 +49,8 @@ class client
 
     virtual std::unique_ptr<connection> dial(peer_id self, conn_type type) = 0;
 
+    virtual void reset_peers(const peer_list &ids) = 0;
+
     static std::unique_ptr<client> New(peer_id target, conn_type type);
 };
 
@@ -57,7 +59,7 @@ class client_pool
     const peer_id self_;
 
     std::mutex mu_;
-    std::unordered_map<conn_type, std::unique_ptr<client>> client_pool_;
+    std::unordered_map<conn_type, std::unique_ptr<client>> clients_;
 
   public:
     client_pool(const peer_id self) : self_(self)
@@ -65,6 +67,8 @@ class client_pool
     }
 
     client *require(conn_type type);
+
+    void reset_peers(const peer_list &ids);
 };
 
 class server
