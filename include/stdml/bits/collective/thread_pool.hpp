@@ -16,6 +16,8 @@ class thread_pool
 
     virtual void add(task f) = 0;
 
+    virtual void wait() = 0;
+
     template <typename F, typename L>
     void par(const F &f, const L &xs)
     {

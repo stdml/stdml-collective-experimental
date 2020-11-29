@@ -85,11 +85,15 @@ void session::all_reduce(const workspace &w)
 
 void session::group_all_reduce(std::vector<std::future<workspace>> ws)
 {
-    // TODO: async
-    for (auto &w : ws) {
-        auto w1 = w.get();
-        all_reduce(w1);
+    auto p = sync::thread_pool::New(8);
+    for (auto &fw : ws) {
+        p->add([this, &fw = fw] {
+            auto w = fw.get();
+            all_reduce(w);
+        });
     }
+    p->wait();
+    delete p;
 }
 
 void session::all_reduce(const void *input, void *output, size_t count,

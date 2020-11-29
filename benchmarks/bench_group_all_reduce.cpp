@@ -29,6 +29,16 @@ std::future<T> make_ready_future(T x)
     return f;
 }
 
+template <typename T, typename Duration>
+std::future<T> make_delayed_future(T x, Duration d)
+{
+    std::promise<T> p;
+    std::future<T> f = p.get_future();
+    std::this_thread::sleep_for(d);
+    p.set_value(std::move(x));
+    return f;
+}
+
 double gigabytes(size_t n)
 {
     constexpr double gi = 1 << 30;
@@ -47,19 +57,6 @@ std::string show_rate(double gibps)
 }
 
 template <typename T>
-void pprint(const std::vector<T> &xs)
-{
-    int i = 0;
-    for (const T &x : xs) {
-        if (i++) {
-            std::cout << ", ";
-        }
-        std::cout << x;
-    }
-    std::cout << std::endl;
-}
-
-template <typename T>
 T mean(const std::vector<T> &xs)
 {
     return std::accumulate(xs.begin(), xs.end(), static_cast<T>(0)) / xs.size();
@@ -67,12 +64,9 @@ T mean(const std::vector<T> &xs)
 
 using C = std::chrono::high_resolution_clock;
 
-double bench_step(stdml::collective::session &sess,
-                  fake_cpu_model<float> &model)
+std::vector<std::future<stdml::collective::workspace>>
+train_model(fake_cpu_model<float> &model)
 {
-    // TRACE_SCOPE(__func__);
-    auto t0 = C::now();
-
     std::vector<std::future<stdml::collective::workspace>> fs;
     for (auto &b : model.buffers) {
         auto dt = stdml::collective::type<float>();
@@ -84,11 +78,19 @@ double bench_step(stdml::collective::session &sess,
             .op = stdml::collective::sum,
             .name = b.name,
         };
-        fs.push_back(make_ready_future(w));
+        using namespace std::chrono_literals;
+        fs.push_back(make_delayed_future(w, 1ms));
     }
+    return fs;
+}
 
+double bench_step(stdml::collective::session &sess,
+                  fake_cpu_model<float> &model)
+{
+    // TRACE_SCOPE(__func__);
+    auto t0 = C::now();
+    auto fs = train_model(model);
     sess.group_all_reduce(std::move(fs));
-
     auto t1 = C::now();
     std::chrono::duration<double> d = (t1 - t0);
     return d.count();
@@ -114,10 +116,9 @@ using stdml::collective::PRINT;
 void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
            int warmup_steps)
 {
-    // pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
-    log(PRINT) << sizes.size() << "tensors";
-    log(PRINT) << "total size" << tot * 4 <<  //
+    log() << sizes.size() << "tensors";
+    log() << "total size" << tot * 4 <<  //
         "(" << gigabytes(tot * 4) << " GiB)";
 
     // stdml::collective::rchan::stat_disable();
@@ -133,13 +134,12 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
     auto run_stage = [&](const char *name, int steps) {
         std::vector<double> metrics;
         for (auto i : std::views::iota(0, steps)) {
-            log(PRINT) << "bench step" << i;
+            log() << "bench step" << i;
             auto d = bench_step(sess, model);
             double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
             metrics.push_back(metric);
             if (sess.rank() == 0) {
-                std::cout << name << " " << i + 1 << " " << show_rate(metric)
-                          << std::endl;
+                log() << name << i + 1 << show_rate(metric);
             }
         }
         return metrics;

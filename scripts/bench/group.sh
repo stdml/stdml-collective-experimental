@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+# export STDML_COLLECTIVE_ENABLE_LOG=1
+
 cfg_flags() {
     echo --benchmarks
 }

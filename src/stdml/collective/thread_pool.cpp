@@ -32,11 +32,19 @@ class semaphore
     }
 
   public:
-    semaphore() : value(0) {}
+    semaphore() : value(0)
+    {
+    }
 
-    void get_one() { get(1); }
+    void get_one()
+    {
+        get(1);
+    }
 
-    void put_one() { put(1); }
+    void put_one()
+    {
+        put(1);
+    }
 };
 
 class thread_pool_impl : public thread_pool
@@ -48,9 +56,14 @@ class thread_pool_impl : public thread_pool
         bool stopped;
 
       public:
-        state() : waiting(0), running(0), stopped(false) {}
+        state() : waiting(0), running(0), stopped(false)
+        {
+        }
 
-        void add() { ++waiting; }
+        void add()
+        {
+            ++waiting;
+        }
 
         void start()
         {
@@ -65,11 +78,20 @@ class thread_pool_impl : public thread_pool
             --running;
         }
 
-        void stop() { stopped = true; }
+        void stop()
+        {
+            stopped = true;
+        }
 
-        bool is_zero() const { return waiting == 0 && running == 0; }
+        bool is_zero() const
+        {
+            return waiting == 0 && running == 0;
+        }
 
-        bool is_stopped() const { return stopped; }
+        bool is_stopped() const
+        {
+            return stopped;
+        }
     };
 
     using thread_pool::task;
@@ -88,7 +110,9 @@ class thread_pool_impl : public thread_pool
             sema.get_one();
             {
                 std::lock_guard<std::mutex> _(mu);
-                if (s.is_stopped()) { break; }
+                if (s.is_stopped()) {
+                    break;
+                }
             }
             task f;
             {
@@ -115,7 +139,9 @@ class thread_pool_impl : public thread_pool
     thread_pool_impl(int n = std::thread::hardware_concurrency())
     {
         ths_.reserve(n);
-        for (auto _ [[gnu::unused]] : std::views::iota(0, n)) { add_worker(); }
+        for (auto _ [[gnu::unused]] : std::views::iota(0, n)) {
+            add_worker();
+        }
     }
 
     ~thread_pool_impl()
@@ -124,12 +150,16 @@ class thread_pool_impl : public thread_pool
             std::lock_guard<std::mutex> _(mu);
             s.stop();
         }
-        for (const auto &_ [[gnu::unused]] : ths_) { sema.put_one(); }
+        for (const auto &_ [[gnu::unused]] : ths_) {
+            sema.put_one();
+        }
         wait();
-        for (auto &th : ths_) { th.join(); }
+        for (auto &th : ths_) {
+            th.join();
+        }
     }
 
-    void wait()
+    void wait() override
     {
         std::unique_lock<std::mutex> lock(mu);
         cv.wait(lock, [&] { return s.is_zero(); });
@@ -146,5 +176,8 @@ class thread_pool_impl : public thread_pool
     }
 };
 
-thread_pool *thread_pool::New(int n) { return new thread_pool_impl(n); }
+thread_pool *thread_pool::New(int n)
+{
+    return new thread_pool_impl(n);
+}
 }  // namespace stdml::sync

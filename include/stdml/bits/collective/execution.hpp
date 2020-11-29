@@ -13,15 +13,19 @@ void par(const F &f, const L &xs)
     std::vector<std::thread> ths;
     ths.reserve(xs.size());
     for (const auto &x : xs) {
-        ths.emplace_back([&, x = x] { f(x); });
+        ths.emplace_back([&, &x = x] { f(x); });
     }
-    for (auto &th : ths) { th.join(); }
+    for (auto &th : ths) {
+        th.join();
+    }
 }
 
 template <typename F, typename L>
 void seq(const F &f, const L &xs)
 {
-    for (const auto &x : xs) { f(x); }
+    for (const auto &x : xs) {
+        f(x);
+    }
 }
 
 template <typename P, typename F, typename L>
