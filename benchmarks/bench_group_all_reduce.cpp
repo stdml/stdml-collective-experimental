@@ -65,10 +65,24 @@ T mean(const std::vector<T> &xs)
 using C = std::chrono::high_resolution_clock;
 
 std::vector<std::future<stdml::collective::workspace>>
-train_model(fake_cpu_model<float> &model)
+train_model(fake_cpu_model<float> &model, int rank, int size)
 {
+    std::vector<int> permu(model.buffers.size());
+    {
+        LOG_SCOPE_RATE("permu", size * 4);
+        const int shift = permu.size() / size * rank;
+        std::iota(permu.begin(), permu.end(), 0);
+        for (auto &i : permu) {
+            i = (i + shift) % permu.size();
+            // int x = i / size;
+            // int y = i % size;
+            // y = (y + size - rank) % size;
+            // i = x * size + y;
+        }
+    }
     std::vector<std::future<stdml::collective::workspace>> fs;
-    for (auto &b : model.buffers) {
+    for (auto i : std::views::iota((size_t)0, model.buffers.size())) {
+        auto &b = model.buffers[permu[i]];
         auto dt = stdml::collective::type<float>();
         stdml::collective::workspace w = {
             .send = b.send_buf.data(),
@@ -91,7 +105,7 @@ double bench_step(stdml::collective::session &sess,
     size_t multiplier = 4 * (sess.size() - 1);
     LOG_SCOPE_RATE(__func__, multiplier * model.data_size);
     auto t0 = C::now();
-    auto fs = train_model(model);
+    auto fs = train_model(model, sess.rank(), sess.size());
     sess.group_all_reduce(std::move(fs));
     auto t1 = C::now();
     std::chrono::duration<double> d = (t1 - t0);

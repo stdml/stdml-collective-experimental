@@ -101,7 +101,9 @@ class scope_rate_logger
         std::stringstream ss;
         ss << std::setprecision(4) << std::setw(6);
         if (d < std::chrono::microseconds(1)) {
-            ss << d.count() << "ns";
+            using D = std::chrono::duration<int64_t, std::nano>;
+            auto d1 = std::chrono::duration_cast<D>(d);
+            ss << d1.count() << "ns";
         } else if (d < std::chrono::milliseconds(1)) {
             using D = std::chrono::duration<float, std::micro>;
             auto d1 = std::chrono::duration_cast<D>(d);

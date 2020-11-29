@@ -85,10 +85,13 @@ void session::all_reduce(const workspace &w)
 
 void session::group_all_reduce(std::vector<std::future<workspace>> ws)
 {
-    auto p = sync::thread_pool::New(8);
+    // size = min { max |Si|}, \cap Si \neq \emptyset
+    auto p = sync::thread_pool::New(76);
+    // auto p = sync::thread_pool::New(75);
     for (auto &fw : ws) {
         p->add([this, &fw = fw] {
             auto w = fw.get();
+            // log() << __func__ << w.name;
             all_reduce(w);
         });
     }
