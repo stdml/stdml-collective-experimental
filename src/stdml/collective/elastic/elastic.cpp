@@ -4,6 +4,7 @@
 
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/elastic.hpp>
+#include <stdml/bits/collective/execution.hpp>
 #include <stdml/bits/collective/json.hpp>
 #include <stdml/bits/collective/log.hpp>
 
@@ -53,10 +54,12 @@ void commit_cluster_config(const cluster_config &new_cluster,
         .version = static_cast<int>(new_version),
         .cluster = new_cluster,
     };
-    log() << "stage" << s.json();
-    // TODO: notify all runners
-    // connection::dial(runner)
-    auto bs = new_cluster.bytes();
-    GoCommitClusterConfig(bs.data(), bs.size(), new_version);
+    auto js = s.json();
+    const auto notify = [&](const peer_id &id) {
+        peer_id self = {0, 0};  // TODO: fill
+        auto conn = rchan::connection::dial(id, rchan::conn_control, self);
+        conn->send("update", js.data(), js.size());
+    };
+    fmap(std::execution::par, notify, new_cluster.runners);
 }
 }  // namespace stdml::collective
