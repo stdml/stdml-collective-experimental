@@ -10,10 +10,8 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/lsds/KungFu/srcs/go/kungfu/execution"
 	"github.com/lsds/KungFu/srcs/go/log"
 	"github.com/lsds/KungFu/srcs/go/plan"
-	"github.com/lsds/KungFu/srcs/go/rchannel/connection"
 	"github.com/lsds/KungFu/srcs/go/utils"
 )
 
@@ -71,40 +69,6 @@ func GoWriteConfigServer(ptr unsafe.Pointer, ptrSize int, newSize int) {
 	newCluster, err := cluster.Resize(newSize)
 	if err == nil {
 		writeConfigServer(os.Getenv(`KUNGFU_CONFIG_SERVER`), newCluster)
-	}
-}
-
-type Stage struct {
-	Version int
-	Cluster plan.Cluster
-}
-
-func (s Stage) Encode() []byte {
-	b := &bytes.Buffer{}
-	json.NewEncoder(b).Encode(s)
-	return b.Bytes()
-}
-
-//export GoCommitClusterConfig
-func GoCommitClusterConfig(ptr unsafe.Pointer, ptrSize int, newVersion int) {
-	cluster := parseCluster(ptr, ptrSize)
-	stage := Stage{
-		Version: newVersion,
-		Cluster: cluster,
-	}
-	log.Debugf("state: %s", stage.Encode())
-	var notify execution.PeerFunc = func(ctrl plan.PeerID) error {
-		var self plan.PeerID
-		conn := connection.New(ctrl, self, connection.ConnControl, 0, false)
-		buf := stage.Encode()
-		msg := connection.Message{
-			Length: uint32(len(buf)),
-			Data:   buf,
-		}
-		return conn.Send("update", msg, 0)
-	}
-	if err := notify.Par(cluster.Runners); err != nil {
-		utils.ExitErr(err)
 	}
 }
 
