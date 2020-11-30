@@ -52,7 +52,12 @@ class peer
 
     std::unique_ptr<session> join_elastic();
 
+    using config_prodiver = std::function<std::optional<cluster_config>()>;
+
+    resize_result resize(std::unique_ptr<session> &, const config_prodiver &);
+
     resize_result resize(std::unique_ptr<session> &);
+
     resize_result resize(std::unique_ptr<session> &, size_t);
 };
 }  // namespace stdml::collective

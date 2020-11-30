@@ -172,19 +172,13 @@ std::unique_ptr<session> peer::join_elastic()
 }
 
 #ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
-resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
-{
-    auto old_cluster = sess->cluster();
-    propose_new_size(old_cluster, new_size);
-    return resize(sess);
-}
-
-resize_result peer::resize(std::unique_ptr<session> &sess)
+resize_result peer::resize(std::unique_ptr<session> &sess,
+                           const config_prodiver &get_config)
 {
     auto old_cluster = sess->cluster();
     auto new_cluster = [&] {
         for (;;) {
-            auto config = get_cluster_config().value_or(old_cluster);
+            auto config = get_config().value_or(old_cluster);
             auto digest = config.bytes();
             if (sess->consistent(digest.data(), digest.size())) {
                 return config;
@@ -218,6 +212,18 @@ resize_result peer::resize(std::unique_ptr<session> &sess)
         sess.reset(new_sess);
     }
     return result;
+}
+
+resize_result peer::resize(std::unique_ptr<session> &sess)
+{
+    return resize(sess, get_cluster_config);
+}
+
+resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
+{
+    auto old_cluster = sess->cluster();
+    propose_new_size(old_cluster, new_size);
+    return resize(sess);
 }
 #else
 resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
