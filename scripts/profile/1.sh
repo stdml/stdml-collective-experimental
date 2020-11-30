@@ -17,7 +17,7 @@ profile_one() {
     export STDML_COLLECTIVE_USE_ASYNC=0
     export STDML_COLLECTIVE_LOG_DIR=logs/profile/$name
 
-    stdml_collective_run_n 4 ./bin/bench-all-reduce $name 4
+    stdml_collective_run_n 10 ./bin/bench-all-reduce $name 4
 }
 
 parse_timeline() {
@@ -32,7 +32,7 @@ style() {
     echo "send #ffff00"
     echo "read_body #00ff00"
     echo "add_to #ff0000"
-
+    echo "all_reduce #7070ff"
     # echo "send0 #ffff00"
     # echo "read_body0 #00ff00"
 
@@ -79,9 +79,11 @@ main() {
     # run_one 10240 20
 }
 
-export STDML_COLLECTIVE_USE_THREAD_POOL=0
+# export STDML_COLLECTIVE_USE_THREAD_POOL=0
 main
 cp 1024x100.png 0.png
+
+./scripts/profile/query-timeline.rb
 
 # export STDML_COLLECTIVE_USE_THREAD_POOL=1
 # main

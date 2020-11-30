@@ -67,6 +67,7 @@ void session::broadcast(const void *input, void *output, size_t count, dtype dt,
 
 void session::all_reduce(const workspace &w)
 {
+    STDML_COLLECTIVE_PROFILE_RATE(__func__, 0);
     const auto f = [sess = this] {
         if (sess->config_.rt == rt_async) {
             return run_graph_pair_list_async;
