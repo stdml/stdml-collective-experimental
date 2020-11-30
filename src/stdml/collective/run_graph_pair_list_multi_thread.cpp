@@ -91,7 +91,8 @@ size_t run_graph_pair_list_multi_thread(session *sess, const workspace &w,
         run_graphs_multi_thread(sess, w, gp);
     };
     // don't use thread pool here
-    fmap(std::execution::par, f, pw);
+    // fmap(std::execution::par, f, pw);
+    fmap(std::execution::seq, f, pw);  // no need to use par!
     return pw.size();
 }
 }  // namespace stdml::collective

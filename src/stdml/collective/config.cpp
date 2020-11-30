@@ -1,4 +1,5 @@
 #include <string>
+#include <thread>
 
 #include <stdml/bits/collective/config.hpp>
 
@@ -11,7 +12,7 @@ system_config parse_system_config_from_env()
     runtime_type rt = rt_multi_thread;
     size_t thread_pool_size = 0;
     if (parse_env_bool("STDML_COLLECTIVE_USE_THREAD_POOL")) {
-        thread_pool_size = 3;
+        thread_pool_size = std::thread::hardware_concurrency();
         rt = rt_thread_pool;
     }
     if (parse_env_bool("STDML_COLLECTIVE_USE_ASYNC")) {

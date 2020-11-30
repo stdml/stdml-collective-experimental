@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+. ./scripts/profile/measure.sh
+
 # export STDML_COLLECTIVE_ENABLE_LOG=1
 
 build() {
@@ -16,7 +18,7 @@ run_all() {
 
 main() {
     if [ ! -f bin/bench-all-reduce ]; then
-        build
+        measure build
     fi
     run_all
 }
