@@ -85,8 +85,8 @@ func (s Stage) Encode() []byte {
 	return b.Bytes()
 }
 
-//export GoProposeClusterConfig
-func GoProposeClusterConfig(ptr unsafe.Pointer, ptrSize int, newVersion int) {
+//export GoCommitClusterConfig
+func GoCommitClusterConfig(ptr unsafe.Pointer, ptrSize int, newVersion int) {
 	cluster := parseCluster(ptr, ptrSize)
 	stage := Stage{
 		Version: newVersion,

@@ -204,7 +204,7 @@ resize_result peer::resize(std::unique_ptr<session> &sess)
             new_cluster.workers.rank(self_) >= new_cluster.workers.size(),
     };
     auto new_version = sess->version() + 1;
-    propose_cluster_config(new_cluster, new_version);
+    commit_cluster_config(new_cluster, new_version);
     if (result.detached) {
         return result;
     }
