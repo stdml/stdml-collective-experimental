@@ -97,6 +97,8 @@ struct cluster_config {
     {
         return runners == c.runners && workers == c.workers;
     }
+
+    std::string json() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const cluster_config &);

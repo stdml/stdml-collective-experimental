@@ -2,11 +2,13 @@
 #include <cstring>
 #include <experimental/iterator>
 #include <iostream>
+#include <map>
 #include <ranges>
 #include <sstream>
 #include <string>
 
 #include <stdml/bits/collective/address.hpp>
+#include <stdml/bits/collective/json.hpp>
 
 uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
@@ -143,6 +145,42 @@ cluster_config::from(const std::vector<std::byte> &bs)
     std::memcpy(runners.data(), ptr + sizeof(N) * 2, size_1);
     std::memcpy(workers.data(), ptr + sizeof(N) * 2 + size_1, size_2);
     return cluster_config(std::move(runners), std::move(workers));
+}
+
+std::string peer_to_json(const peer_id &id)
+{
+    std::stringstream ss;
+    ss << '{';
+    std::vector<std::pair<std::string, int>> pairs({
+        {"IPv4", id.ipv4},
+        {"Port", id.port},
+    });
+    std::transform(pairs.begin(), pairs.end(),
+                   std::experimental::make_ostream_joiner(ss, ","),
+                   json::to_json<std::string, int>);
+    ss << '}';
+    return ss.str();
+}
+
+std::string cluster_config::json() const
+{
+    std::stringstream ss;
+    ss << '{';
+    ss << '"' << "Runners" << '"' << ':';
+    ss << '[';
+    std::transform(runners.begin(), runners.end(),
+                   std::experimental::make_ostream_joiner(ss, ","),
+                   peer_to_json);
+    ss << ']';
+    ss << ',';
+    ss << '"' << "Workers" << '"' << ':';
+    ss << '[';
+    std::transform(workers.begin(), workers.end(),
+                   std::experimental::make_ostream_joiner(ss, ","),
+                   peer_to_json);
+    ss << ']';
+    ss << '}';
+    return ss.str();
 }
 
 std::ostream &operator<<(std::ostream &os, const cluster_config &config)

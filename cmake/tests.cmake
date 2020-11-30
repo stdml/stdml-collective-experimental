@@ -1,5 +1,6 @@
 ADD_BINARY(tests/unit/test_io.cpp)
 ADD_BINARY(tests/unit/test_ioutil.cpp)
+ADD_BINARY(tests/unit/test_json.cpp)
 
 ADD_BINARY(tests/integration/test_all_reduce.cpp)
 ADD_BINARY(tests/integration/test_broadcast.cpp)
