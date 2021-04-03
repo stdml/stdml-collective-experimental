@@ -1,8 +1,13 @@
+#include <cstddef>
+#include <mutex>
+
 #include <stdml/bits/collective/waitgroup.hpp>
 
 namespace stdml::sync
 {
-wait_group::wait_group(size_t n) : n_(n) {}
+wait_group::wait_group(size_t n) : n_(n)
+{
+}
 
 void wait_group::add(size_t n)
 {

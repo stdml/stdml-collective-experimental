@@ -1,7 +1,10 @@
 #pragma once
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
+#include <optional>
 #include <queue>
+#include <utility>
 
 namespace stdml::collective
 {
@@ -16,7 +19,9 @@ class channel
     std::condition_variable cv;
 
   public:
-    channel(size_t cap = 1) : cap(cap) {}
+    channel(size_t cap = 1) : cap(cap)
+    {
+    }
 
     T get()
     {
@@ -26,6 +31,18 @@ class channel
         buffer.pop();
         cv.notify_one();
         return x;
+    }
+
+    std::optional<T> try_get()
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        if (buffer.empty()) {
+            return {};
+        }
+        T x = std::move(buffer.front());
+        buffer.pop();
+        cv.notify_one();
+        return std::optional<T>(std::move(x));
     }
 
     void put(T x)

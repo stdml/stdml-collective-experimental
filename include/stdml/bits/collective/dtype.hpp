@@ -43,6 +43,10 @@ DEFINE_DTYPE(uint64_t, u64);
 DEFINE_DTYPE(float, f32);
 DEFINE_DTYPE(double, f64);
 
+#if defined(__APPLE__)
+DEFINE_DTYPE(long, i64);
+DEFINE_DTYPE(size_t, u64);
+#endif
 #undef DEFINE_DTYPE
 
 template <typename T>

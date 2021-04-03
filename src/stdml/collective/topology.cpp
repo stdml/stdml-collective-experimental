@@ -1,5 +1,9 @@
-#include <numeric>
-#include <ranges>
+#include <algorithm>
+#include <cstddef>
+#include <ostream>
+#include <set>
+#include <utility>
+#include <vector>
 
 #include <stdml/bits/collective/topology.hpp>
 
@@ -7,12 +11,16 @@ namespace stdml::collective
 {
 std::ostream &operator<<(std::ostream &os, const graph &g)
 {
-    const int n = g.size();
+    const size_t n = g.size();
     os << n << std::endl;
-    for (auto i : std::views::iota(0, n)) {
+    for (size_t i = 0; i < n; ++i) {
         os << i << "[" << g.self_loop(i) << "]";
-        for (auto j : g.nexts(i)) { os << " ->" << j; }
-        for (auto j : g.prevs(i)) { os << " <-" << j; }
+        for (auto j : g.nexts(i)) {
+            os << " ->" << j;
+        }
+        for (auto j : g.prevs(i)) {
+            os << " <-" << j;
+        }
         os << std::endl;
     }
     return os;
@@ -25,13 +33,17 @@ graph_builder::graph_builder(V n) : self_loop_(n), nexts_(n), prevs_(n)
 
 bool graph_builder::edeg_exists(V i, V j)
 {
-    if (i == j) { return self_loop_[i]; }
+    if (i == j) {
+        return self_loop_[i];
+    }
     return nexts_[i].count(j) > 0;
 }
 
 bool graph_builder::add_edge(V i, V j)
 {
-    if (edeg_exists(i, j)) { return false; }
+    if (edeg_exists(i, j)) {
+        return false;
+    }
     if (i == j) {
         self_loop_[i] = true;
     } else {
@@ -59,7 +71,9 @@ graph graph_builder::build(bool reverse, bool add_self_loops) const
     std::transform(nexts_.begin(), nexts_.end(), nexts.begin(), sort_set<V>());
     std::transform(prevs_.begin(), prevs_.end(), prevs.begin(), sort_set<V>());
 
-    if (reverse) { std::swap(nexts, prevs); }
+    if (reverse) {
+        std::swap(nexts, prevs);
+    }
 
     if (add_self_loops) {
         std::vector<bool> self_loop(n);
@@ -73,8 +87,10 @@ graph graph_builder::build(bool reverse, bool add_self_loops) const
 graph_builder start_broadcast_graph_builder(size_t n, size_t root)
 {
     graph_builder g(n);
-    for (auto i : std::views::iota((size_t)0, n)) {
-        if (i != root) { g.add_edge(root, i); }
+    for (size_t i = 0; i < n; ++i) {
+        if (i != root) {
+            g.add_edge(root, i);
+        }
     }
     return g;
 }
@@ -83,7 +99,7 @@ graph_pair make_circular_graph_pair(size_t n, size_t r)
 {
     graph_builder rg(n);
     graph_builder bg(n);
-    for (auto i : std::views::iota((size_t)1, n)) {
+    for (size_t i = 1; i < n; ++i) {
         rg.add_edge((r + i) % n, (r + i + 1) % n);
         bg.add_edge((r + i - 1) % n, (r + i) % n);
     }
@@ -103,7 +119,7 @@ graph_pair_list make_graph_pair_list_star(size_t n, size_t root)
 graph_pair_list make_graph_pair_list_ring(size_t n)
 {
     std::vector<graph_pair> pairs;
-    for (auto i : std::views::iota((size_t)0, n)) {
+    for (size_t i = 0; i < n; ++i) {
         pairs.emplace_back(make_circular_graph_pair(n, i));
     }
     return {pairs};

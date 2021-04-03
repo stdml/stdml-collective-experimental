@@ -23,7 +23,9 @@ void pprint(const std::vector<T> &xs)
 {
     int i = 0;
     for (const T &x : xs) {
-        if (i++) { std::cout << ", "; }
+        if (i++) {
+            std::cout << ", ";
+        }
         std::cout << x;
     }
     std::cout << std::endl;

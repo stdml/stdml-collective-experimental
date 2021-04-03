@@ -1,16 +1,16 @@
-#include <cassert>
-#include <cstring>
-#include <execution>
-#include <functional>
-#include <iostream>
-#include <numeric>
-#include <ranges>
-#include <thread>
+#include <cstddef>
+#include <cstdint>
+#include <future>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <stdml/bits/collective/affinity.hpp>
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/execution.hpp>
 #include <stdml/bits/collective/log.hpp>
+#include <stdml/bits/collective/runtimes/go.hpp>
 #include <stdml/bits/collective/session.hpp>
 #include <stdml/bits/collective/stat.hpp>
 #include <stdml/bits/collective/thread_pool.hpp>
@@ -18,170 +18,89 @@
 
 namespace stdml::collective
 {
-extern bool parse_env_bool(const std::string &s);
-
-session::session(const peer_id self, const peer_list peers, mailbox *mailbox,
-                 slotbox *slotbox, rchan::client_pool *client_pool,
-                 const strategy s)
-    : peers_(peers),
-      rank_(std::find(peers.begin(), peers.end(), self) - peers.begin()),
-      all_reduce_topo_(make_graph_pair_list(s, peers.size())),
+session::session(system_config config, size_t version, size_t rank,
+                 peer_list peers, peer_list runners, mailbox *mailbox,
+                 slotbox *slotbox, rchan::client_pool *client_pool, strategy s)
+    : config_(config),
+      version_(version),
+      rank_(rank),
+      peers_(std::move((peers))),
+      runners_(std::move(runners)),
+      all_reduce_topo_(make_graph_pair_list(s, peers_.size())),
       mailbox_(mailbox),
       slotbox_(slotbox),
       client_pool_(client_pool)
 {
-    if (parse_env_bool("STDML_USE_THREAD_POOL")) {
+    if (config_.thread_pool_size > 0) {
         log() << "using thread pool";
-        pool_.reset(sync::thread_pool::New(3));
+        pool_.reset(sync::thread_pool::New(config_.thread_pool_size));
     } else {
         log() << "not using thread pool";
     }
-    // set_affinity(rank_, peers.size());  // FIXME: use local
+    if (config_.rt == rt_async) {
+        async_runtime_.reset(runtime::New(8));
+    }
+    if (config_.use_affinity) {
+        set_affinity(rank_, peers_.size());  // FIXME: use local
+    }
     barrier();
 }
 
-class workspace_state
+extern void run_graphs(session *sess, const workspace &w,
+                       const std::vector<const graph *> &gs);
+
+void session::broadcast(const void *input, void *output, size_t count, dtype dt,
+                        std::string name)
 {
-    std::mutex mu_;
-
-    const workspace *w;
-    uint32_t recv_count_;
-
-  public:
-    workspace_state(const workspace *w) : w(w), recv_count_(0) {}
-
-    const workspace *operator->() const { return w; }
-
-    const void *effective_data()
-    {
-        if (recv_count_ > 0) {
-            return w->recv;
-        } else {
-            return w->send;
-        }
-    }
-
-    void add_to(const void *data)
-    {
-        std::lock_guard<std::mutex> _(mu_);
-        const void *ptr = effective_data();
-        STDML_PROFILE_RATE(__func__, w->count * 4);
-        reduce(w->recv, data, ptr, w->count, w->dt, w->op);
-        ++recv_count_;
-    }
-
-    void replace(const void *data)
-    {
-        std::lock_guard<std::mutex> _(mu_);
-        std::memcpy(w->recv, data, w->data_size());
-        ++recv_count_;
-    }
-
-    void forward() { std::memcpy(w->recv, w->send, w->data_size()); }
-
-    uint32_t recv_count() const { return recv_count_; }
-};
-
-struct recv {
-    const session *sess;
-    workspace_state *state;
-    const bool reduce;
-
-    recv(const session *sess, workspace_state *state, bool reduce)
-        : sess(sess), state(state), reduce(reduce)
-    {
-    }
-
-    void operator()(const peer_id &id) const
-    {
-        if (reduce) {
-            mailbox::Q *q = sess->mailbox_->require(id, (*state)->name);
-            auto b = q->get();
-            state->add_to(b.data.get());
-        } else {
-            slotbox::S *s = sess->slotbox_->require(id, (*state)->name);
-            s->waitQ.put((*state)->recv);
-            void *ptr [[gnu::unused]] = s->recvQ.get();
-            assert(ptr == (*state)->recv);
-        }
-    }
-};
-
-struct send {
-    const session *sess;
-    //  const
-    workspace_state *state;
-    const bool reduce;
-
-    send(const session *sess, workspace_state *w, bool reduce)
-        : sess(sess), state(w), reduce(reduce)
-    {
-    }
-
-    void operator()(const peer_id &id) const
-    {
-        uint32_t flags = 0;
-        if (!reduce) { flags |= rchan::message_header::wait_recv_buf; };
-        auto client = sess->client_pool_->require(rchan::conn_collective);
-        client->send(id, (*state)->name.c_str(), state->effective_data(),
-                     (*state)->data_size(), flags);
-    }
-};
-
-void session::run_graphs(const workspace &w,
-                         const std::vector<const graph *> &gs)
-{
-    auto par = pool_.get();
-    auto seq = std::execution::seq;
-    workspace_state state(&w);
-    for (const auto g : gs) {
-        const auto prevs = peers_[g->prevs(rank_)];
-        const auto nexts = peers_[g->nexts(rank_)];
-        if (g->self_loop(rank_)) {
-            fmap(par, recv(this, &state, true), prevs);
-            fmap(par, send(this, &state, true), nexts);
-        } else {
-            if (prevs.size() == 0 && state.recv_count() == 0) {
-                state.forward();
-            } else {
-                fmap(seq, recv(this, &state, false), prevs);
-            }
-            fmap(par, send(this, &state, false), nexts);
-        }
-    }
-}
-
-size_t name_based_hash(size_t i, const std::string &name)
-{
-    size_t h = 0;
-    for (const auto &c : name) { h += c * c; }
-    return h;
-}
-
-template <typename T>
-T ceil_div(T a, T b)
-{
-    return (a / b) + (a % b ? 1 : 0);
-}
-
-size_t session::run_graph_pair_list(const workspace &w,
-                                    const graph_pair_list &gps,
-                                    size_t chunk_size)
-{
-    const size_t k = ceil_div(w.data_size(), chunk_size);
-    const auto ws = w.split(k);
-    const auto f = [&](size_t i) {
-        const size_t j = name_based_hash(i, ws[i].name);
-        const auto &[g0, g1] = gps.choose(j);
-        run_graphs(ws[i], {g0, g1});
+    workspace w = {
+        .send = input,
+        .recv = output,
+        .count = count,
+        .dt = dt,
+        .op = sum,  // not used
+        .name = std::move(name),
     };
-    // don't use thread pool here
-    fmap(std::execution::par, f, std::views::iota((size_t)0, ws.size()));
-    return k;
+    run_graphs_multi_thread(this, w,
+                            {&all_reduce_topo_.pairs[0].broadcast_graph});
+}
+
+void session::all_reduce(const workspace &w)
+{
+    STDML_COLLECTIVE_PROFILE_RATE(__func__, 0);
+    const auto f = [sess = this] {
+        if (sess->config_.rt == rt_async) {
+            return run_graph_pair_list_async;
+        }
+        if (sess->config_.rt == rt_go) {
+#if STDML_COLLECTIVE_HAVE_GO_RUNTIME
+            return run_graph_pair_list_go_rt;
+#else
+            throw std::runtime_error("go runtime not built");
+#endif
+        }
+        return run_graph_pair_list_multi_thread;
+    }();
+    f(this, w, all_reduce_topo_, 1 << 20);
+}
+
+void session::group_all_reduce(std::vector<std::future<workspace>> ws)
+{
+    // size = min { max |Si|}, \cap Si \neq \emptyset
+    auto p = sync::thread_pool::New(76);
+    // auto p = sync::thread_pool::New(75);
+    for (auto &fw : ws) {
+        p->add([this, &fw = fw] {
+            auto w = fw.get();
+            // log() << __func__ << w.name;
+            all_reduce(w);
+        });
+    }
+    p->wait();
+    delete p;
 }
 
 void session::all_reduce(const void *input, void *output, size_t count,
-                         dtype dt, reduce_op op, const std::string &name)
+                         dtype dt, reduce_op op, std::string name)
 {
     workspace w = {
         .send = input,
@@ -189,9 +108,26 @@ void session::all_reduce(const void *input, void *output, size_t count,
         .count = count,
         .dt = dt,
         .op = op,
-        .name = name,
+        .name = std::move(name),
     };
-    run_graph_pair_list(w, all_reduce_topo_);
+    all_reduce(w);
+}
+
+bool session::consistent(const void *ptr, size_t size)
+{
+    size_t size_1 = all_reduce(size, min);
+    size_t size_2 = all_reduce(size, max);
+    if (size_1 != size_2) {
+        return false;
+    }
+    if (size == 0) {
+        return true;
+    }
+    std::vector<uint8_t> y(size);
+    std::vector<uint8_t> z(size);
+    all_reduce(ptr, y.data(), size, type<uint8_t>(), min);
+    all_reduce(ptr, z.data(), size, type<uint8_t>(), max);
+    return y == z;
 }
 
 void session::barrier()
@@ -200,14 +136,34 @@ void session::barrier()
     all_reduce(x);
 }
 
-void session::_ring_handshake()
+template <typename T>
+T ceil_div(T a, T b)
 {
-    const size_t next_rank = (rank_ + 1) % peers_.size();
-    const auto next = peers_[next_rank];
-    log() << "next:" << next;
-    auto client = client_pool_->require(rchan::conn_ping);
-    using namespace std::string_literals;
-    const auto msg = "hello world"s;
-    client->send(next, "ping", msg.data(), msg.size());
+    return (a / b) + (a % b ? 1 : 0);
+}
+
+size_t name_based_hash(size_t i, const std::string &name)
+{
+    size_t h = 0;
+    for (const auto &c : name) {
+        h += c * c;
+    }
+    return h;
+}
+
+std::vector<std::pair<workspace, std::vector<const graph *>>>
+split_work(const workspace &w, const graph_pair_list &gps, size_t chunk_size)
+{
+    const size_t k = ceil_div(w.data_size(), chunk_size);
+    const auto ws = w.split(k);
+    std::vector<std::pair<workspace, std::vector<const graph *>>> pw;
+    pw.reserve(ws.size());
+    for (size_t i = 0; i < ws.size(); ++i) {
+        const size_t j = name_based_hash(i, ws[i].name);
+        const auto &[g0, g1] = gps.choose(j);
+        pw.emplace_back(
+            std::make_pair(ws[i], std::vector<const graph *>({g0, g1})));
+    }
+    return pw;
 }
 }  // namespace stdml::collective

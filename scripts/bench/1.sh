@@ -2,59 +2,36 @@
 set -e
 
 . ./scripts/profile/measure.sh
+. ./scripts/bin/stdml-collective-run
 
-kungfu_run_flags() {
-    local np=$1
-    local logdir=$2
-
-    echo -q
-    echo -logdir logs/bench/$logdir
-
-    echo -logfile kungfu-run.log
-    # echo -v false
-
-    echo -H "127.0.0.1:$np"
-    echo -np $np
-
-    echo -strategy STAR
-    # echo -strategy RING
-}
-
-kungfu_run() {
-    local np=$1
-    shift
-    local logdir=$1
-    shift
-
-    env KUNGFU_CONFIG_LOG_LEVEL=debug \
-        kungfu-run $(kungfu_run_flags $np $logdir) $@
+bench_one() {
+    local name=$1
+    local workload=$2
+    export STDML_COLLECTIVE_LOG_DIR=logs/bench/$name
+    stdml_collective_run_n 4 ./bin/stdml-collective-bench-allreduce $workload 10 3
 }
 
 run_test_set() {
     for workload in $(cat $1); do
-        kungfu_run 4 $workload ./bin/bench-all-reduce $workload 2
+        bench_one $workload $workload
     done
 }
 
 bench_all() {
-    run_test_set testdata/test-set-1.txt
-    kungfu_run 4 resnet50 ./bin/bench-all-reduce testdata/resnet50.txt 2
-
-    # kungfu_run 4 resnet50-fuse ./bin/bench-all-reduce testdata/resnet50.txt 10 fuse
-    # kungfu_run 4 ./bin/bench-all-reduce testdata/vgg16.txt 10
-    # kungfu_run 4 ./bin/bench-all-reduce testdata/bert.txt 10
+    # run_test_set testdata/test-set-1.txt
+    measure bench_one resnet50 testdata/resnet50.txt
+    measure bench_one vgg16 testdata/vgg16.txt
+    # bench_one bert testdata/bert.txt
 }
 
 summary() {
-    echo $1
     for f in $(ls logs/bench/$1/*.stdout.log); do
-        grep FINAL $f
+        grep FINAL $f || true
     done
 }
 
 summary_all() {
     for d in $(ls logs/bench); do
-        echo $d
         summary $d
     done
 }
@@ -64,8 +41,13 @@ main() {
     summary_all
 }
 
-export STDML_USE_THREAD_POOL=0
+# export STDML_COLLECTIVE_USE_THREAD_POOL=0
+# main
+
+export STDML_COLLECTIVE_ENABLE_LOG=1
+export STDML_COLLECTIVE_USE_THREAD_POOL=1
+# export STDML_COLLECTIVE_USE_AFFINITY=1
 main
 
-export STDML_USE_THREAD_POOL=1
-main
+# export STDML_COLLECTIVE_USE_ASYNC=1
+# main

@@ -1,4 +1,5 @@
 # Starter pipeline
+
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
@@ -6,29 +7,91 @@
 trigger:
 - master
 - draft
+- stdml-dev
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-20.04'
 
 jobs:
-# - job: native
+- job: native
+  steps:
+  - script: ./configure --tests
+    displayName: Configure
 
-#   continueOnError: true
+  - script: make -j $(nproc)
+    displayName: Build
 
+  - script: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    displayName: Get Deps
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+      export PATH=$GOBIN:$PATH
+
+      ./t
+    displayName: Test
+
+# - job: docker
 #   steps:
 
-#   - script: sudo apt install -y g++-10
-#     displayName: Install Deps
-
-#   - script: g++-10 --version
-#     # g++-10 is already the newest version (10.1.0-2ubuntu1~18.04).
-#     displayName: Check Version
-
-#   - script: make
+#   - script: docker build .
 #     displayName: Build
 
-- job: docker
+- job: release
   steps:
+  - script: ./configure --release=$(git rev-parse --short HEAD) --deb --shared --benchmarks --disable-cxx11-abi
+    displayName: Configure
 
-  - script: docker build .
+  - script: make -j $(nproc) package
     displayName: Build
+
+  - script: rm -fr release/_CPack_Packages
+    displayName: Cleanup
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      # targetPath: $(ls release/*.gz)
+      targetPath: ./release
+      artifact: 'libstdml-collective'
+      publishLocation: 'pipeline'
+
+- job: benchmark
+  steps:
+  - script: ./configure --benchmarks
+    displayName: Configure
+
+  - script: make -j $(nproc)
+    displayName: Build
+
+  - script: |
+      go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+      export GOBIN=$HOME/go/bin
+      go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    displayName: Install Deps
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      export STDML_COLLECTIVE_USE_THREAD_POOL=1
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      export PATH=$GOBIN:$PATH
+
+      export STDML_COLLECTIVE_USE_ASYNC=1
+      np=4
+      kungfu-run -q -np $np -H "127.0.0.1:$np" ./bin/bench-all-reduce 1024x100 10 3
+    displayName: Bench

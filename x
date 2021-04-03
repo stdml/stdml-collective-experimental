@@ -1,8 +1,14 @@
 #!/bin/sh
 set -e
 
+. ./scripts/profile/measure.sh
+
 cfg_flags() {
     echo --mpi
+    echo --go-runtime
+    echo --with-go-runtime=$HOME/local
+    echo --enable-elastic
+    echo --tests
 }
 
 build() {
@@ -27,6 +33,13 @@ main() {
 # main
 # ./scripts/vis/timeline.sh
 
-build
+# measure build
 # ./scripts/run/example-mpi.sh
-./scripts/bench/mpi.sh
+# ./scripts/bench/mpi.sh
+# export STDML_COLLECTIVE_USE_GO_RUNTIME=1
+# ./scripts/bench/small.sh
+
+# export STDML_COLLECTIVE_USE_ASYNC=1
+# ./scripts/tsan/run.sh
+# ./scripts/bench/group.sh
+./scripts/bench/small.sh

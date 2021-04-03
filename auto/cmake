@@ -2,7 +2,7 @@
 
 QUIET=0
 
-CMAKE_FLAGS=
+CMAKE_FLAGS='--no-warn-unused-cli' # FIXME: don't print "Not searching for unused variables given on the command line."
 
 add_cmake_flag() {
     if [ $QUIET -eq 0 ]; then
@@ -57,5 +57,8 @@ config_cmake() {
     add_cmake_prefixes
     add_cmake_flags
     cleanup_cmake_cache
+
+    mkdir -p .build
+    echo $CMAKE_FLAGS | tr ' ' '\n' >.build/cmake-flags.log
     cmake . $CMAKE_FLAGS
 }

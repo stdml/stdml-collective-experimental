@@ -1,62 +1,62 @@
 #pragma once
-#include <mutex>
-// #include <unordered_map>
+#include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
 
 #include <stdml/bits/collective/buffer.hpp>
 #include <stdml/bits/collective/channel.hpp>
 
 namespace stdml::collective
 {
-class mailbox
+template <typename T>
+struct queue_pair {
+    channel<T> waitQ;
+    channel<T> recvQ;
+
+    void get(T p)
+    {
+        waitQ.put(p);
+        T q = recvQ.get();
+        if (p != q) {
+            assert(p == q);  // TODO: throw
+        }
+    }
+
+    void put(const std::function<void(T)> &write)
+    {
+        T p = waitQ.get();
+        write(p);
+        recvQ.put(p);
+    }
+};
+
+template <typename Box>
+class basic_mailbox
 {
-    using queue = channel<buffer>;
     using key = std::pair<peer_id, std::string>;
 
     std::mutex mu_;
-    std::map<key, std::unique_ptr<queue>> boxes_;
+    std::map<key, std::unique_ptr<Box>> boxes_;
 
   public:
-    using Q = queue;
+    using Q = Box;
 
-    Q *require(const peer_id id, const std::string &name)
+    Box *require(const peer_id id, const std::string &name)
     {
         const auto k = std::make_pair(id, name);
         std::lock_guard<std::mutex> _(mu_);
         if (auto it = boxes_.find(k); it != boxes_.end()) {
             return it->second.get();
         }
-        queue *q = new queue;
+        Box *q = new Box;
         boxes_[k].reset(q);
         return q;
     }
 };
 
-class slotbox
-{
-    struct slot_pair {
-        channel<void *> waitQ;
-        channel<void *> recvQ;
-    };
-
-    using key = std::pair<peer_id, std::string>;
-
-    std::mutex mu_;
-    std::map<key, std::unique_ptr<slot_pair>> slots_;
-
-  public:
-    using S = slot_pair;
-
-    S *require(const peer_id id, const std::string &name)
-    {
-        const auto k = std::make_pair(id, name);
-        std::lock_guard<std::mutex> _(mu_);
-        if (auto it = slots_.find(k); it != slots_.end()) {
-            return it->second.get();
-        }
-        S *s = new S;
-        slots_[k].reset(s);
-        return s;
-    }
-};
+using mailbox = basic_mailbox<channel<buffer>>;
+using slotbox = basic_mailbox<queue_pair<void *>>;
 }  // namespace stdml::collective

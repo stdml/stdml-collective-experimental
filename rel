@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+tag=stdml-collective-experimental:release
+docker build --rm -t $tag -f Dockerfile .
+
+id=$(docker create $tag)
+docker cp $id:/src/release .
+docker rm $id

@@ -1,11 +1,51 @@
 #pragma once
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <stdml/bits/collective/dtype.hpp>
+#include <stdml/bits/collective/stat.hpp>
 
 namespace stdml::collective
 {
+class byte_buffer
+{
+    std::vector<char> data_;
+
+  public:
+    byte_buffer(size_t n)
+    {
+        data_.reserve(n);
+    }
+
+    void append(const void *ptr, size_t n)
+    {
+        const char *p = reinterpret_cast<const char *>(ptr);
+        data_.insert(data_.end(), p, p + n);
+    }
+
+    template <typename T>
+    void append(const T &x)
+    {
+        append(&x, sizeof(T));
+    }
+
+    const void *data() const
+    {
+        return data_.data();
+    }
+
+    size_t size() const
+    {
+        return data_.size();
+    }
+};
+
 struct buffer {
     std::unique_ptr<char[]> data;
     uint32_t len;
@@ -32,7 +72,10 @@ struct interval {
     T begin;
     T end;
 
-    T len() const { return end - begin; }
+    T len() const
+    {
+        return end - begin;
+    }
 };
 
 template <typename T>
@@ -59,19 +102,22 @@ struct workspace {
     reduce_op op;
     std::string name;
 
-    size_t data_size() const { return count * dtype_size(dt); }
+    size_t data_size() const
+    {
+        return count * dtype_size(dt);
+    }
 
     workspace slice(size_t i, size_t j) const
     {
         const size_t s = dtype_size(dt);
         return {
-            send : (char *)send + i * s,
-            recv : (char *)recv + i * s,
-            count : j - i,
-            dt : dt,
-            op : op,
-            name : "part::" + name + "[" + std::to_string(i) + ":" +
-                std::to_string(j) + "]",
+            .send = (char *)send + i * s,
+            .recv = (char *)recv + i * s,
+            .count = j - i,
+            .dt = dt,
+            .op = op,
+            .name = "part::" + name + "[" + std::to_string(i) + ":" +
+                    std::to_string(j) + "]",
         };
     }
 
@@ -84,6 +130,57 @@ struct workspace {
             ws.push_back(slice(i.begin, i.end));
         }
         return ws;
+    }
+
+    void forward() const
+    {
+        std::memcpy(recv, send, data_size());
+    }
+};
+
+class workspace_state
+{
+    std::mutex mu_;
+
+    const workspace *w;
+    uint32_t recv_count_;
+
+  public:
+    workspace_state(const workspace *w) : w(w), recv_count_(0)
+    {
+    }
+
+    const workspace *operator->() const
+    {
+        return w;
+    }
+
+    const void *effective_data()
+    {
+        if (recv_count_ > 0) {
+            return w->recv;
+        } else {
+            return w->send;
+        }
+    }
+
+    void add_to(const void *data)
+    {
+        std::lock_guard<std::mutex> _(mu_);
+        const void *ptr = effective_data();
+        STDML_COLLECTIVE_PROFILE_RATE(__func__, w->count * 4);
+        reduce(w->recv, data, ptr, w->count, w->dt, w->op);
+        ++recv_count_;
+    }
+
+    void forward()
+    {
+        w->forward();
+    }
+
+    uint32_t recv_count() const
+    {
+        return recv_count_;
     }
 };
 }  // namespace stdml::collective

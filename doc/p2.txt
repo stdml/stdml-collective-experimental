@@ -1,0 +1,19 @@
+FINAL RESULT: 10240000x10          4.643 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: 1024000x100          4.758 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: 102400x100           4.656 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: 1024x100             0.043 GiB/s (44.407 MiB/s) | runtime: rt_thread_pool
+FINAL RESULT: 16384x100            1.766 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: 2048x100             0.003 GiB/s (3.117 MiB/s) | runtime: rt_thread_pool
+FINAL RESULT: 262144x10            5.551 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: 4096x100             0.040 GiB/s (40.569 MiB/s) | runtime: rt_thread_pool
+FINAL RESULT: 8192x100             0.781 GiB/s (799.629 MiB/s) | runtime: rt_thread_pool
+FINAL RESULT: testdata/bert.txt    4.118 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: testdata/resnet50.txt 4.153 GiB/s | runtime: rt_thread_pool
+FINAL RESULT: testdata/vgg16.txt   4.358 GiB/s | runtime: rt_thread_pool
+
+
+
+baseline
+Result: model: resnet50-imagenet, 214 parameters, size ~ [256B, 9MiB], total 97MiB, mode: seq, rate: 7.28GiB/s
+Result: model: vgg16-imagenet, 32 parameters, size ~ [256B, 392MiB], total 527MiB, mode: seq, rate: 8.50GiB/s
+Result: model: bert, 599 parameters, size ~ [8B, 89MiB], total 1GiB, mode: seq, rate: 8.67GiB/s

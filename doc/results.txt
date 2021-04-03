@@ -1,0 +1,8 @@
+results are not stable
+
+
+[127.0.0.1.10000::stdout] FINAL RESULT: 1024x100 0.431 GiB/s (441.661 MiB/s) | runtime: rt_thread_pool
+
+[127.0.0.1.10000::stdout] FINAL RESULT: 1024x100 0.243 GiB/s (249.294 MiB/s) | runtime: rt_multi_thread
+
+[127.0.0.1.10000::stdout] FINAL RESULT: 1024x100 0.119 GiB/s (121.826 MiB/s) | runtime: rt_async

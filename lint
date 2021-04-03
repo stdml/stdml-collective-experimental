@@ -1,0 +1,4 @@
+set -e
+
+./scripts/lint/gen-clang-format.rb
+./scripts/lint/fmt.sh

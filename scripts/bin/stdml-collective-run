@@ -1,0 +1,60 @@
+# -*- mode: sh -*-
+
+kungfu_run_flags() {
+    local np=$1
+    local logdir=logs/stdml-collective
+    if [ ! -z "$STDML_COLLECTIVE_LOG_DIR" ]; then
+        logdir=$STDML_COLLECTIVE_LOG_DIR
+    fi
+    echo -q
+    echo -logdir $logdir
+    echo -H "127.0.0.1:$np"
+    echo -np $np
+}
+
+kungfu_run() {
+    local np=$1
+    shift
+    kungfu-run $(kungfu_run_flags $np) $@
+}
+
+stdml_collective_run_n() {
+    local np=$1
+    shift
+    # TODO: parse args
+    kungfu_run $np $@
+}
+
+kungfu_elastic_run_flags() {
+    local np=$1
+
+    local logdir=logs/stdml-collective
+    if [ ! -z "$STDML_COLLECTIVE_LOG_DIR" ]; then
+        logdir=$STDML_COLLECTIVE_LOG_DIR
+    fi
+    echo -q
+    echo -logdir $logdir
+    echo -logfile kungfu-run.log
+
+    echo -np $np
+
+    echo -port 7777
+
+    echo -w
+    local port=9999
+    echo -config-server http://127.0.0.1:$port/config
+    echo -builtin-config-port $port
+}
+
+kungfu_elastic_run() {
+    local np=$1
+    shift
+    kungfu-run $(kungfu_elastic_run_flags $np) $@
+}
+
+stdml_collective_elastic_run_n() {
+    local np=$1
+    shift
+    # TODO: parse args
+    kungfu_elastic_run $np $@
+}

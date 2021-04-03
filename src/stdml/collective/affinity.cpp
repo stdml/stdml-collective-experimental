@@ -1,18 +1,23 @@
+#include <cstddef>
 #include <numeric>
-#include <ranges>
 #include <string>
+#include <thread>
 #include <vector>
-
-#include <sched.h>
 
 #include <stdml/bits/collective/affinity.hpp>
 #include <stdml/bits/collective/log.hpp>
 
-std::string show(const std::vector<int> &arr)
+extern "C" {
+void stdml_collective_set_affinity(int n, int *cpus);
+}
+
+static std::string show(const std::vector<int> &arr)
 {
     std::string s;
     for (auto x : arr) {
-        if (!s.empty()) { s += ","; }
+        if (!s.empty()) {
+            s += ",";
+        }
         s += std::to_string(x);
     }
     return s;
@@ -26,14 +31,6 @@ namespace stdml::collective
 //                              local_size)
 // {
 // }
-
-void bind_to(const std::vector<int> &cpu_ids)
-{
-    cpu_set_t cpu;
-    CPU_ZERO(&cpu);
-    for (auto i : cpu_ids) { CPU_SET(i, &cpu); }
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu);
-}
 
 // int set_affinity(const std::vector<int> &cpu_order,
 //                  const size_t numa_node_count, const size_t local_rank,
@@ -50,16 +47,21 @@ void bind_to(const std::vector<int> &cpu_ids)
 
 void set_affinity(int rank, int size)
 {
-    int nproc = 12;
+    int nproc = std::thread::hardware_concurrency();
     std::vector<int> cpus(nproc);
     std::iota(cpus.begin(), cpus.end(), 0);
-    // set_affinity(cpus, rank, size);
 
-    std::vector<int> selected_cpus(nproc / size);
-    for (auto i : std::views::iota((size_t)0, selected_cpus.size())) {
-        selected_cpus[i] = rank * selected_cpus.size() + i;
+    // set_affinity(cpus, rank, size);
+    std::vector<int> selected_cpus;
+    int half = cpus.size() / 2;
+    if (rank < size / 2) {
+        selected_cpus.insert(selected_cpus.begin(), cpus.begin(),
+                             cpus.begin() + half);
+    } else {
+        selected_cpus.insert(selected_cpus.begin(), cpus.begin() + half,
+                             cpus.end());
     }
     log() << "bind to" << show(selected_cpus);
-    bind_to(selected_cpus);
+    stdml_collective_set_affinity(selected_cpus.size(), selected_cpus.data());
 }
 }  // namespace stdml::collective

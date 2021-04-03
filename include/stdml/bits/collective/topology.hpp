@@ -1,6 +1,8 @@
 #pragma once
-#include <iostream>
+#include <cstddef>
+#include <ostream>
 #include <set>
+#include <utility>
 #include <vector>
 
 namespace stdml::collective
@@ -23,13 +25,25 @@ class graph
     {
     }
 
-    const vertex_list &nexts(V i) const { return nexts_[i]; }
+    const vertex_list &nexts(V i) const
+    {
+        return nexts_[i];
+    }
 
-    const vertex_list &prevs(V i) const { return prevs_[i]; }
+    const vertex_list &prevs(V i) const
+    {
+        return prevs_[i];
+    }
 
-    bool self_loop(V i) const { return self_loop_[i]; }
+    bool self_loop(V i) const
+    {
+        return self_loop_[i];
+    }
 
-    size_t size() const { return self_loop_.size(); }
+    size_t size() const
+    {
+        return self_loop_.size();
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const graph &g);

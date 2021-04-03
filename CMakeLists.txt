@@ -1,18 +1,23 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.15)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.15) # For FetchContent
 PROJECT(stdml-collective)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(LIBRARY_OUTPUT_PATH lib)
 
 FIND_PACKAGE(Threads REQUIRED)
+INCLUDE(cmake/build_info.cmake)
 INCLUDE(cmake/common.cmake)
 INCLUDE(cmake/strict.cmake)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
 
+OPTION(USE_CLANG_TIDY "Use clang-tidy." OFF)
+IF(USE_CLANG_TIDY)
+    INCLUDE(cmake/tidy.cmake)
+ENDIF()
 IF(ENABLE_TRACE)
     INCLUDE(cmake/fetch_stdtracer.cmake)
-    ADD_COMPILE_OPTIONS(-DSTDML_ENABLE_TRACE=1)
+    ADD_COMPILE_OPTIONS(-DSTDML_COLLECTIVE_ENABLE_TRACE=1)
 ENDIF()
 
 IF(DISABLE_CXX11_ABI)
@@ -28,9 +33,21 @@ ENDIF()
 OPTION(BUILD_TESTS "Build tests." OFF)
 
 INCLUDE(cmake/lib.cmake)
+
+OPTION(BUILD_CMDS "" ON)
+IF(BUILD_CMDS)
+    INCLUDE(cmake/apps.cmake)
+ENDIF()
+
 INCLUDE(cmake/examples.cmake)
+
 IF(BUILD_TESTS)
     INCLUDE(cmake/tests.cmake)
 ENDIF()
-INCLUDE(cmake/benchmarks.cmake)
+
+OPTION(BUILD_BENCHMARKS "Build benchmarks." OFF)
+IF(BUILD_BENCHMARKS)
+    INCLUDE(cmake/benchmarks.cmake)
+ENDIF()
+
 INCLUDE(cmake/pack.cmake)

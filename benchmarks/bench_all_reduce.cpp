@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -13,6 +12,9 @@
 
 #include <stdml/bits/collective/stat.hpp>
 #include <stdml/collective>
+
+#include <std/filesystem>
+#include <std/ranges>
 
 // #include <tracer/simple_log>
 
@@ -26,12 +28,33 @@ double gigabytes(size_t n)
     return n / gi;
 }
 
+std::string show_rate(double gibps)
+{
+    char line[64];
+    if (gibps >= 1) {
+        sprintf(line, "%.3f GiB/s", gibps);
+    } else {
+        sprintf(line, "%.3f GiB/s (%.3f MiB/s)", gibps, gibps * 1024);
+    }
+    return line;
+}
+
+std::string pad(std::string s, size_t len)
+{
+    if (s.size() < len) {
+        s.resize(len, ' ');
+    }
+    return s;
+}
+
 template <typename T>
 void pprint(const std::vector<T> &xs)
 {
     int i = 0;
     for (const T &x : xs) {
-        if (i++) { std::cout << ", "; }
+        if (i++) {
+            std::cout << ", ";
+        }
         std::cout << x;
     }
     std::cout << std::endl;
@@ -45,13 +68,15 @@ T mean(const std::vector<T> &xs)
 
 using C = std::chrono::high_resolution_clock;
 
-void bench_all_reduce_one(stdml::collective::session &session,
+void bench_all_reduce_one(stdml::collective::session &sess,
                           const std::string &name, std::vector<float> &x,
                           std::vector<float> &y)
 {
-    // TRACE_SCOPE(__func__);
+    // size_t multiplier = 4 * (sess.size() - 1);
+    // LOG_SCOPE_RATE(__func__, multiplier * x.size() * sizeof(float));
+
     auto t0 = C::now();
-    session.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
+    sess.all_reduce(x.data(), x.data() + x.size(), y.data(), name);
     auto t1 = C::now();
     double d [[gnu::unused]] = (t1 - t0).count();
 }
@@ -74,18 +99,23 @@ std::vector<size_t> read_int_list(const char *filename)
 {
     std::vector<size_t> sizes;
     std::ifstream fs(filename);
-    if (!fs.is_open()) { throw std::runtime_error("file not found"); }
+    if (!fs.is_open()) {
+        throw std::runtime_error("file not found");
+    }
     size_t size;
-    while (fs >> size) { sizes.push_back(size); }
+    while (fs >> size) {
+        sizes.push_back(size);
+    }
     return sizes;
 }
 
 using stdml::collective::log;
 using stdml::collective::PRINT;
 
-void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
+void bench(const std::string &name, const std::vector<size_t> &sizes, int steps,
+           int warmup_steps)
 {
-    pprint(sizes);
+    // pprint(sizes);
     const auto tot = std::accumulate(sizes.begin(), sizes.end(), 0);
     log(PRINT) << sizes.size() << "tensors";
     log(PRINT) << "total size" << tot * 4 <<  //
@@ -94,11 +124,11 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
     // stdml::collective::rchan::stat_disable();
 
     auto peer = stdml::collective::peer::from_env();
-    stdml::collective::session session = peer.join();
+    stdml::collective::session sess = peer.join();
 
     // stdml::collective::rchan::stat_enable();
 
-    size_t multiplier = 4 * (session.size() - 1);
+    size_t multiplier = 4 * (sess.size() - 1);
 
     std::vector<fake_cpu_buffer_t<float>> buffers;
     for (auto i : std::views::iota((size_t)0, sizes.size())) {
@@ -107,21 +137,37 @@ void bench(const std::string &name, const std::vector<size_t> &sizes, int times)
         buffers.emplace_back(name, sizes[i]);
     }
 
-    std::vector<double> metrics;
-    for (auto i : std::views::iota(0, times)) {
-        log(PRINT) << "bench step" << i;
-        auto d = bench_step(session, buffers);
-        double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
-        metrics.push_back(metric);
-        printf("%.3f GiB/s\n", metric);
+    auto run_stage = [&](const char *name, int steps) {
+        std::vector<double> metrics;
+        for (auto i : std::views::iota(0, steps)) {
+            log(PRINT) << "bench step" << i;
+            auto d = bench_step(sess, buffers);
+            double metric = gigabytes(multiplier * tot * sizeof(float)) / d;
+            metrics.push_back(metric);
+            if (sess.rank() == 0) {
+                std::cout << name << " " << i + 1 << " " << show_rate(metric)
+                          << std::endl;
+            }
+        }
+        return metrics;
+    };
+    {
+        LOG_SCOPE_LATENCY("warmup");
+        run_stage("warmup", warmup_steps);
     }
-    printf("FINAL RESULT: %s %.3f GiB/s\n", name.c_str(), mean(metrics));
+    auto metrics = LOG_EXPR_LATENCY(run_stage("step", steps));
+    if (sess.rank() == 0) {
+        std::cout << "FINAL RESULT: " << pad(name, 20) << " "
+                  << show_rate(mean(metrics)) << " | " << peer.config()
+                  << std::endl;
+    }
 }
 
 struct options {
     std::string name;
     std::vector<size_t> sizes;
-    int times;
+    int steps;
+    int warmup_steps;
 };
 
 options parse_args(int argc, char *argv[])
@@ -136,28 +182,20 @@ options parse_args(int argc, char *argv[])
         sizes = read_int_list(workload.c_str());
     }
 
-    const int times = std::stoi(argv[2]);
+    const int steps = std::stoi(argv[2]);
 
+    int warmup_step = 0;
     if (argc > 3) {
-        const size_t tot = std::accumulate(sizes.begin(), sizes.end(), 0);
-        sizes = {tot};
+        warmup_step = std::stoi(argv[3]);
     }
 
-    return {workload, sizes, times};
-}
-
-void signal_handler(int sig)
-{
-    log() << "signal" << sig << ":" << strsignal(sig);  //
+    return {workload, sizes, steps, warmup_step};
 }
 
 int main(int argc, char *argv[])
 {
     // TRACE_SCOPE(__func__);
     auto options = parse_args(argc, argv);
-
-    std::signal(SIGINT, signal_handler);
-
-    bench(options.name, options.sizes, options.times);
+    bench(options.name, options.sizes, options.steps, options.warmup_steps);
     return 0;
 }

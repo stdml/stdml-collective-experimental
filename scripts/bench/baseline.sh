@@ -12,12 +12,13 @@ kungfu_run_flags() {
 kungfu_run() {
     local np=$1
     shift
-    env KUNGFU_CONFIG_LOG_LEVEL=debug \
-        kungfu-run $(kungfu_run_flags $np) $@
+    kungfu-run $(kungfu_run_flags $np) $@
 }
 
 main() {
-    kungfu_run 4 kungfu-bench-allreduce -model resnet50-imagenet -mode seq -epochs 10 -warmup 0
+    # kungfu_run 4 kungfu-bench-allreduce -model resnet50-imagenet -mode seq -epochs 10 -warmup 0
+    # kungfu_run 4 kungfu-bench-allreduce -model vgg16-imagenet -mode seq -epochs 10 -warmup 0
+    kungfu_run 4 kungfu-bench-allreduce -model bert -mode seq -epochs 10 -warmup 0
 }
 
 main

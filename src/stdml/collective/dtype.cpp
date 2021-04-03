@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <stdexcept>
 
@@ -35,12 +37,18 @@ size_t dtype_size(dtype dt)
 
 template <typename T>
 struct std_min {
-    T operator()(const T &x, const T &y) const { return std::min(x, y); }
+    T operator()(const T &x, const T &y) const
+    {
+        return std::min(x, y);
+    }
 };
 
 template <typename T>
 struct std_max {
-    T operator()(const T &x, const T &y) const { return std::max(x, y); }
+    T operator()(const T &x, const T &y) const
+    {
+        return std::max(x, y);
+    }
 };
 
 struct __workspace {

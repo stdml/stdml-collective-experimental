@@ -1,0 +1,215 @@
+---
+cstdio:
+- fprintf
+- printf
+- std::FILE
+- std::fclose
+- std::fopen
+- std::fprintf
+- std::fputc
+- std::printf
+- std::putchar
+- std::snprintf
+- std::sprintf
+- std::sscanf
+cstdint:
+- int16_t
+- int32_t
+- int64_t
+- int8_t
+- std::int16_t
+- std::int32_t
+- std::int64_t
+- std::int8_t
+- std::uint8_t
+- uint16_t
+- uint32_t
+- uint64_t
+- uint8_t
+cstddef:
+- size_t
+- std::byte
+- std::size_t
+cmath:
+- std::abs
+- std::exp
+- std::fabs
+- std::log
+- std::sqrt
+numeric:
+- std::accumulate
+- std::inner_product
+- std::iota
+functional:
+- std::apply
+- std::divides
+- std::function
+- std::logical_or
+- std::minus
+- std::multiplies
+- std::plus
+array:
+- std::array
+cstdlib:
+- std::atexit
+- std::getenv
+atomic:
+- std::atomic
+iterator:
+- std::back_inserter
+- std::distance
+iostream:
+- std::basic_ostream
+- std::cout
+- std::getline
+- std::ios::beg
+- std::ios::end
+iomanip:
+- std::boolalpha
+- std::fixed
+- std::setprecision
+- std::setw
+cerr:
+- std::cerr
+chrono:
+- std::chrono
+- std::chrono::duration
+- std::chrono::duration_cast
+- std::chrono::high_resolution_clock
+- std::chrono::hours
+- std::chrono::microseconds
+- std::chrono::milliseconds
+- std::chrono::minutes
+- std::chrono::seconds
+- std::chrono::system_clock
+- std::chrono::time_point
+- std::chrono_literals
+- std::micro
+- std::milli
+- std::nano
+condition_variable:
+- std::condition_variable
+algorithm:
+- std::copy
+- std::copy_if
+- std::equal
+- std::fill
+- std::find
+- std::generate
+- std::max
+- std::max_element
+- std::min
+- std::min_element
+- std::minmax_element
+- std::reverse
+- std::sort
+- std::swap
+- std::transform
+deque:
+- std::deque
+ostream:
+- std::endl
+- std::ostream
+system_error:
+- std::error_code
+- std::generic_category
+execution:
+- std::execution
+- std::execution::par
+- std::execution::parallel_policy
+- std::execution::seq
+- std::execution::sequenced_policy
+experimental/iterator:
+- std::experimental::make_ostream_joiner
+net:
+- std::experimental::net
+filesystem:
+- std::filesystem
+forward_list:
+- std::forward_list
+future:
+- std::future
+tuple:
+- std::get
+- std::make_tuple
+- std::tie
+- std::tuple
+- std::tuple_cat
+- std::tuple_element
+- std::tuple_size
+fstream:
+- std::ifstream
+- std::ofstream
+utility:
+- std::index_sequence
+- std::make_index_sequence
+- std::make_pair
+- std::move
+- std::pair
+stdexcept:
+- std::invalid_argument
+- std::runtime_error
+ios:
+- std::ios
+type_traits:
+- std::is_floating_point
+- std::is_standard_layout
+cctype:
+- std::isspace
+- std::tolower
+istream:
+- std::istream
+sstream:
+- std::istringstream
+- std::stringstream
+list:
+- std::list
+mutex:
+- std::lock_guard
+- std::mutex
+- std::unique_lock
+memory:
+- std::make_unique
+- std::unique_ptr
+map:
+- std::map
+cstring:
+- std::memcpy
+- std::memset
+- std::strcmp
+- std::strlen
+random:
+- std::mt19937
+- std::normal_distribution
+- std::random_device
+limits:
+- std::numeric_limits
+optional:
+- std::optional
+queue:
+- std::queue
+set:
+- std::set
+csignal:
+- std::signal
+string:
+- std::stoi
+- std::string
+- std::string::npos
+- std::string_literals
+- std::to_string
+thread:
+- std::this_thread::get_id
+- std::this_thread::sleep_for
+- std::this_thread::yield
+- std::thread
+- std::thread::hardware_concurrency
+- std::thread::id
+typeinfo:
+- std::type_info
+unordered_map:
+- std::unordered_map
+vector:
+- std::vector
+ranges:
+- std::views::iota

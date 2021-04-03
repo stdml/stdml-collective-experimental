@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+
+./bin/stdml-collective-bench-send-recv s 0.0.0.0:9999 1024

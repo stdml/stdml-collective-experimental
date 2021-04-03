@@ -1,11 +1,10 @@
 #include <memory>
 
+#include <stdml/collective>
 #include <stdml/mpi.h>
 
-#include <stdml/collective>
-
-std::unique_ptr<stdml::collective::peer> _default_peer;
-std::unique_ptr<stdml::collective::session> _default_session;
+static std::unique_ptr<stdml::collective::peer> _default_peer;
+static std::unique_ptr<stdml::collective::session> _default_session;
 
 int MPI_Init(int *argc, char ***argv)
 {

@@ -3,12 +3,13 @@ set -e
 
 cfg_flags() {
     echo --trace
+    echo --benchmarks
     true
 }
 
 build() {
     ./configure $(cfg_flags)
-    make
+    make -j $(nproc)
 }
 
 run_all() {
