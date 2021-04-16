@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-
-./configure --tests
-make -j $(nproc)
-./bin/test-http
