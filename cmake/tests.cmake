@@ -13,7 +13,7 @@ ADD_BINARY(tests/integration/test_leak.cpp)
 ADD_EXECUTABLE(test-c++17 tests/build/c++17.cpp)
 SET_PROPERTY(TARGET test-c++17 PROPERTY CXX_STANDARD 17)
 
-OPTION(USE_CATCH2 "Use Catch2." ON)
+OPTION(USE_CATCH2 "Use Catch2." OFF)
 
 IF(USE_CATCH2)
     INCLUDE(cmake/fetch_catch2.cmake)
