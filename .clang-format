@@ -1,0 +1,20 @@
+---
+AllowShortFunctionsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: true
+IndentWidth: 4
+IndentPPDirectives: BeforeHash
+BreakBeforeBraces: Linux
+SortIncludes: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+DerivePointerAlignment: false
+PointerAlignment: Right
+ColumnLimit: 80
+IncludeBlocks: Regroup
+SpacesBeforeTrailingComments: 2
+IncludeCategories:
+- Regex: "^<(cassert|csignal|cstddef|cstdint|cstdio|cstdlib|cstring)>$"
+  Priority: 1
+- Regex: "^<(algorithm|array|atomic|cctype|chrono|condition_variable|execution|experimental/buffer|experimental/iterator|experimental/net|filesystem|fstream|functional|future|go/sync|iomanip|iostream|iterator|map|memory|mutex|numeric|optional|ostream|queue|ranges|set|sstream|stdexcept|string|system_error|thread|type_traits|unordered_map|utility|vector)>$"
+  Priority: 1
+- Regex: "^<stdml/"
+  Priority: 2

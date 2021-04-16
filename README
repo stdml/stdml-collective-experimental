@@ -1,1 +1,16 @@
 collective communication library for stdml
+
+
+features
+
+MPI compatiable interface (*)
+elastic support (*)
+async interface (*)
+unified interface for hetogeneous device (TODO: CUDA, http://github.com/lgarithm/stdcuda)
+point to point APIs (TODO)
+extentable protocol (*)
+dependency free, pure modern c++ (TODO: cleanup go dependency)
+
+
+TensorFlow binding: https://github.com/stdml/stdml-collective-tensorflow-experimental
+PyTorch binding: https://github.com/stdml/stdml-collective-pytorch-experimental

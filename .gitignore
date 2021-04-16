@@ -1,0 +1,16 @@
+*.a
+*.bmp
+*.events
+*.png
+*.xml
+/Makefile
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+Testing
+_deps
+compile_commands.json
+install_manifest.txt
+lib
+release
+style.txt

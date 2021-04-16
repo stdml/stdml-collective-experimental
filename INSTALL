@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+if [ -z $PREFIX ]; then
+    PREFIX=$HOME/local/stdml-collective-experimental
+fi
+
+./configure --prefix=$PREFIX --shared --disable-cxx11-abi
+
+make install -j 8

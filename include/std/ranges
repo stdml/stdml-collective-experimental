@@ -1,0 +1,32 @@
+// -*- mode: c++ -*-
+#pragma once
+/*
+#include <ttl/range>
+
+#if defined(__APPLE__)
+    #define RANGE(i, n) for (auto i : ttl::range(n))
+else
+    #define RANGE(i, n) for (auto i : std::views::iota((decltype(n))0, (n)))
+#endif
+*/
+
+#define RANGE(i, n) for (decltype(n) i = 0; i < (n); ++i)
+
+#if __has_include(<ranges>)
+    #include <ranges>
+#else
+    #include <numeric>
+    #include <vector>
+
+namespace std::views
+{
+template <typename I>
+std::vector<I> iota(I m, I n)
+{
+    vector<I> r(n - m);
+    std::iota(r.begin(), r.end(), m);
+    return r;
+}
+}  // namespace std::views
+
+#endif
