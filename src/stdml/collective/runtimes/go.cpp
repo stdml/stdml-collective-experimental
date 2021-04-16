@@ -1,5 +1,8 @@
 #include <chrono>
+#include <cstddef>
+#include <cstdio>
 #include <go/sync>
+#include <vector>
 
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/runtimes/go.hpp>

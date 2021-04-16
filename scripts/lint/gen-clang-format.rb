@@ -49,6 +49,7 @@ def main
     "algorithm",
     "array",
     "atomic",
+    "cctype",
     "chrono",
     "condition_variable",
     "execution",

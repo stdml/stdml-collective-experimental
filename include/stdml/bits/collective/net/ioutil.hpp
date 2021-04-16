@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
@@ -8,9 +9,8 @@
 
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/std/buffer.hpp>
+#include <stdml/bits/collective/std/net.hpp>
 #include <stdml/bits/collective/task.hpp>
-
-#include <net>
 
 namespace stdml::collective
 {

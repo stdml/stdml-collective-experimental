@@ -3,6 +3,7 @@ set -e
 
 # defaults
 VERBOSE=0
+USE_STD_CXX_NET=0
 
 . ./auto/cmake
 
@@ -29,6 +30,9 @@ parse_args() {
             ;;
         --mpi)
             HAVE_MPI=1
+            ;;
+        --use-std-cxx-net)
+            USE_STD_CXX_NET=1
             ;;
         --go-runtime)
             HAVE_GO_RUNTIME=1
@@ -90,6 +94,7 @@ add_cmake_flags() {
     add_cmake_flag GO_RUNTIME $GO_RUNTIME
     add_cmake_flag HAVE_GO_RUNTIME $HAVE_GO_RUNTIME
     add_cmake_flag HAVE_MPI $HAVE_MPI
+    add_cmake_flag USE_STD_CXX_NET $USE_STD_CXX_NET
     # END sort
 
     add_cmake_flag CMAKE_EXPORT_COMPILE_COMMANDS ${VERBOSE}

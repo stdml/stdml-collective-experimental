@@ -1,6 +1,5 @@
 #pragma once
-#include <execution>
-#if __has_include(<execution>) && !defined(__APPLE__)
+#if __has_include(<execution>) && !defined(__APPLE__) && (__GNUC__ > 9)
     // FIXME: use system <execution> on APPLE
     #include <execution>
 #else

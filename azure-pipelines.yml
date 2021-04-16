@@ -32,6 +32,25 @@ jobs:
       ./t
     displayName: Test
 
+- job: std_cxx_net
+  steps:
+  - script: ./configure --tests --use-std-cxx-net
+    displayName: Configure
+
+  - script: make -j $(nproc)
+    displayName: Build
+
+  - script: go get -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+    displayName: Get Deps
+
+  - script: |
+      export GOBIN=$HOME/go/bin
+      go install -v github.com/lsds/KungFu/srcs/go/cmd/kungfu-run
+      export PATH=$GOBIN:$PATH
+
+      ./t
+    displayName: Test
+
 # - job: docker
 #   steps:
 

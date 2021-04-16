@@ -2,21 +2,6 @@
 require "yaml"
 require "json"
 
-$modules = [
-  # "logger",
-  # "stdapp",
-  # "stdml-collective-experimental",
-  # "stdml-datasets",
-  # "stdml-eval",
-  # "stdml-ir-experimental",
-  "stdml-operators",
-# "stdnn-ops-cuda",
-# "stdnn-ops",
-# "stdtensor-tools",
-# "stdtensor",
-# "stdtracer",
-]
-
 def module_sources(m)
   [
     "include",
@@ -45,15 +30,14 @@ def extract_includes(filename)
   end
 end
 
-def extract_std_tokens(filename)
+def extract_std_tokens(filename, pattern)
   open(filename).each_line.collect do |line|
-    p = /(std::[:\w]+|size_t|uint8_t|uint16_t|uint32_t|uint64_t|int8_t|int16_t|int32_t|int64_t|printf|fprintf)/
-    line.scan(p).flatten
+    line.scan(pattern).flatten
   end.flatten.uniq.compact
 end
 
 def list_sources
-  roots = module_sources(".") #  + $modules.collect { |m| module_sources("vendors/" + m) }.flatten
+  roots = module_sources(".")
   patterns = roots.collect { |r| ["#{r}/**/*.h", "#{r}/**/*.hpp", "#{r}/**/*.cpp"] }.flatten
   Dir.glob(patterns)
 end
@@ -112,11 +96,13 @@ end
 
 def run(fix = false)
   std_headers = load_db
-  # p std_headers
+  c_funcs = std_headers.keys.select { |s| not s.start_with? "std::" }
+  pattern = '(std::[:\w]+|' + c_funcs.join("|") + ")"
+  pattern = /#{pattern}/
 
   for filename in list_sources
     # puts "checking %s" % [f]
-    stds = extract_std_tokens(filename)
+    stds = extract_std_tokens(filename, pattern)
     for x in stds
       if not std_headers[x]
         puts "missing header info for %s" % [x]
@@ -135,10 +121,11 @@ def run(fix = false)
       .select { |i| not i =~ /ttl\// }
       .select { |i| not i =~ /stdml\// }
       .select { |i| not i =~ /tracer\// }
-      .select { |i| not i =~ /^go$/ }
+      .select { |i| not i =~ /^go/ }
 
     redundent = incs - required
     missing = required - incs
+    missing -= ["net"]
 
     if redundent.count > 0 or missing.count > 0
       puts "#{filename}"

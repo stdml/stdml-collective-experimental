@@ -1,8 +1,10 @@
+assert cassert
 fprintf cstdio
 int16_t cstdint
 int32_t cstdint
 int64_t cstdint
 int8_t cstdint
+memset cstring
 printf cstdio
 size_t cstddef
 std::abs cmath
@@ -180,6 +182,7 @@ std::unique_ptr memory
 std::unordered_map unordered_map
 std::vector vector
 std::views::iota ranges
+strlen cstring
 uint16_t cstdint
 uint32_t cstdint
 uint64_t cstdint

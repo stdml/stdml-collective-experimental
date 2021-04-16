@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <cstdint>
-#include <execution>
 #include <iostream>
 #include <optional>
 #include <ostream>
@@ -12,6 +11,7 @@
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/elastic.hpp>
 #include <stdml/bits/collective/execution.hpp>
+#include <stdml/bits/collective/http.hpp>
 #include <stdml/bits/collective/json.hpp>
 #include <stdml/bits/collective/log.hpp>
 
@@ -20,12 +20,6 @@
 namespace stdml::collective
 {
 extern std::string safe_getenv(const char *name);
-extern bool http_parse_url(std::string url, std::string &host, uint16_t &port,
-                           std::string &path);
-extern std::pair<int, std::string> http_get(const char *host, uint16_t port,
-                                            const char *path);
-extern void http_put(const char *host, uint16_t port, const char *path,
-                     const void *ptr, size_t len);
 
 std::optional<cluster_config> get_cluster_config()
 {

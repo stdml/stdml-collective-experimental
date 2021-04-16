@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -18,16 +19,10 @@
 #include <stdml/bits/collective/connection.hpp>
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/net/ioutil.hpp>
+#include <stdml/bits/collective/net/socket.h>
 #include <stdml/bits/collective/rchan.hpp>
 #include <stdml/bits/collective/stat.hpp>
 #include <stdml/bits/collective/std/net.hpp>
-
-#include <net>
-
-extern "C" {
-extern void set_default_server_socket_opts(int fd);
-extern void set_default_client_socket_opts(int fd);
-}
 
 namespace net = std::experimental::net;
 

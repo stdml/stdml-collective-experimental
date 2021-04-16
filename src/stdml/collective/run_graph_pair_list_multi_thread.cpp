@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <cstdint>
-#include <execution>
 #include <vector>
 
 #include <stdml/bits/collective/execution.hpp>

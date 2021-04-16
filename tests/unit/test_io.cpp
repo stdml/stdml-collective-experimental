@@ -3,13 +3,11 @@
 
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/net/ioutil.hpp>
+#include <stdml/bits/collective/net/socket.h>
 #include <stdml/bits/collective/std/net.hpp>
 
-extern "C" {
-extern void set_default_server_socket_opts(int fd);
-}
-
 namespace net = std::experimental::net;
+
 using stdml::collective::log;
 
 using tcp_endpoint = net::ip::tcp::endpoint;

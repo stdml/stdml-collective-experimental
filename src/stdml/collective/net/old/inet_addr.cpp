@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include <stdml/bits/collective/net/tcp.hpp>
 

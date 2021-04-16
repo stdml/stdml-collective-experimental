@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -13,6 +14,7 @@
 #include <vector>
 
 #include <stdml/bits/collective/buffer.hpp>
+#include <stdml/bits/collective/http.hpp>
 #include <stdml/bits/collective/log.hpp>
 #include <stdml/bits/collective/net/tcp.hpp>
 #include <stdml/bits/collective/rchan.hpp>
@@ -29,7 +31,8 @@ namespace stdml::collective
 std::pair<int, std::string> http_get(const char *host, uint16_t port,
                                      const char *path)
 {
-    throw std::runtime_error(s("TODO ") + __func__);
+    TODO(__func__);
+    throw std::runtime_error("TODO");
 }
 }  // namespace stdml::collective
 

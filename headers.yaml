@@ -1,4 +1,6 @@
 ---
+cassert:
+- assert
 cstdio:
 - fprintf
 - printf
@@ -26,6 +28,13 @@ cstdint:
 - uint32_t
 - uint64_t
 - uint8_t
+cstring:
+- memset
+- std::memcpy
+- std::memset
+- std::strcmp
+- std::strlen
+- strlen
 cstddef:
 - size_t
 - std::byte
@@ -60,6 +69,7 @@ iterator:
 - std::distance
 iostream:
 - std::basic_ostream
+- std::cerr
 - std::cout
 - std::getline
 - std::ios::beg
@@ -69,8 +79,6 @@ iomanip:
 - std::fixed
 - std::setprecision
 - std::setw
-cerr:
-- std::cerr
 chrono:
 - std::chrono
 - std::chrono::duration
@@ -173,11 +181,6 @@ memory:
 - std::unique_ptr
 map:
 - std::map
-cstring:
-- std::memcpy
-- std::memset
-- std::strcmp
-- std::strlen
 random:
 - std::mt19937
 - std::normal_distribution
