@@ -1,4 +1,4 @@
-FILE(GLOB examples examples/*.cpp)
+FILE(GLOB examples examples/*.c examples/*.cpp)
 
 FOREACH(example ${examples})
     ADD_BINARY(${example})
