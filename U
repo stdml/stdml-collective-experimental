@@ -1,9 +1,0 @@
-#!/bin/sh
-
-TAG=latest
-
-cd release
-tar -xf stdml-collective-${TAG}-Linux.tar.gz
-
-mkdir -p $HOME/local
-cp -vr stdml-collective-${TAG}-Linux/* $HOME/local
