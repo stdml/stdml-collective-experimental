@@ -5,8 +5,10 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+- alpha
 - draft
+- main
+- master
 - stdml-dev
 
 pool:
