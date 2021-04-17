@@ -134,7 +134,9 @@ struct workspace {
 
     void forward() const
     {
-        std::memcpy(recv, send, data_size());
+        if (recv != send) {
+            std::memcpy(recv, send, data_size());
+        }
     }
 };
 

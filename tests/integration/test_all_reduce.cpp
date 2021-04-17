@@ -95,7 +95,7 @@ class test_all_reduce
         auto &sess = *sess_;
         Init &init = *init_;
 
-        const stdml::collective::dtype dt = stdml::collective::type<T>();
+        constexpr auto dt = stdml::collective::type<T>();
         const std::string dt_name = type_name<T>();
         std::stringstream name;
         name << type_name<Init>() << "::all_reduce(count=" << count << ", "
@@ -129,6 +129,55 @@ int test_all_reduce_all(stdml::collective::session &sess, size_t count)
     return for_all_types(test_all_reduce(&sess, &init), 0, count);
 }
 
+template <typename Init>
+class test_inplace_all_reduce
+{
+    stdml::collective::session *sess_;
+    Init *init_;
+
+  public:
+    test_inplace_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
+    }
+
+    template <typename T>
+    int operator()(size_t count) const
+    {
+        printf("test_inplace_all_reduce\n");
+
+        constexpr auto dt = stdml::collective::type<T>();
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        std::vector<T> x(count);
+        std::vector<T> y(count);
+        std::vector<T> z(count);
+        init(x, y, z);
+        std::copy(x.begin(), x.end(), y.begin());
+
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::all_reduce(count=" << count << ", "
+             << "dtype=" << dt_name << ")";
+
+        sess.all_reduce(y.data(), y.data(), count, dt, stdml::collective::sum,
+                        name.str());
+        if (!std::equal(y.begin(), y.end(), z.begin())) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+};
+
+template <typename Init>
+int test_inplace_all_reduce_all(stdml::collective::session &sess, size_t count)
+{
+    Init init(sess.rank(), sess.size());
+    return for_all_types(test_inplace_all_reduce(&sess, &init), 0, count);
+}
+
 template <typename T>
 std::future<T> make_ready_future(T x)
 {
@@ -156,7 +205,7 @@ class test_group_all_reduce
         auto &sess = *sess_;
         Init &init = *init_;
 
-        const stdml::collective::dtype dt = stdml::collective::type<T>();
+        constexpr auto dt = stdml::collective::type<T>();
         const std::string dt_name = type_name<T>();
         std::stringstream name;
         name << type_name<Init>() << "::group_all_reduce(n=" << counts.size()
@@ -208,24 +257,16 @@ int main()
 {
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session sess = peer.join();
-    const std::vector<size_t> counts({
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        100,
-        1024,
-    });
+    const std::vector<size_t> counts = {
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1024,
+    };
     int failed = 0;
     for (auto count : counts) {
         failed += test_all_reduce_all<test_data_1>(sess, count);
         failed += test_all_reduce_all<test_data_2>(sess, count);
+
+        failed += test_inplace_all_reduce_all<test_data_1>(sess, count);
+        failed += test_inplace_all_reduce_all<test_data_2>(sess, count);
     }
     failed += test_group_all_reduce_all<test_data_1>(sess, counts);
     failed += test_group_all_reduce_all<test_data_2>(sess, counts);

@@ -5,7 +5,7 @@ set -e
 
 rebuild() {
     ./configure --tests
-    make -j 8
+    make -j $(nproc)
 }
 
 kungfu_run_flags() {
