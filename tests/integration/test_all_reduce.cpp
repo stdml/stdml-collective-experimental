@@ -6,6 +6,7 @@
 
 #include <stdml/collective>
 
+#include "testing.hpp"
 #include <cxxabi.h>
 #include <std/ranges>
 
@@ -133,68 +134,68 @@ std::future<T> make_ready_future(T x)
     return f;
 }
 
-template <typename T, typename Init>
-int test_group_all_reduce(stdml::collective::session &sess,
-                          const std::vector<size_t> &counts, Init &init)
-{
-    const stdml::collective::dtype dt = stdml::collective::type<T>();
-    const std::string dt_name = type_name<T>();
-    std::stringstream name;
-    name << type_name<Init>() << "::group_all_reduce(n=" << counts.size()
-         << ", "
-         << "dtype=" << dt_name << ")";
+template <typename Init>
+struct test_group_all_reduce {
+    stdml::collective::session *sess_;
+    Init *init_;
 
-    using Tensor = std::vector<T>;
-    std::vector<Tensor> xs;
-    std::vector<Tensor> ys;
-    std::vector<Tensor> zs;
-    for (auto i : std::views::iota((size_t)0, counts.size())) {
-        xs.emplace_back(counts[i]);
-        ys.emplace_back(counts[i]);
-        zs.emplace_back(counts[i]);
-        init(xs[i], ys[i], zs[i]);
+    test_group_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
     }
-    std::vector<std::future<stdml::collective::workspace>> fs;
-    for (auto i : std::views::iota((size_t)0, counts.size())) {
-        stdml::collective::workspace w = {
-            .send = xs[i].data(),
-            .recv = ys[i].data(),
-            .count = counts[i],
-            .dt = dt,
-            .op = stdml::collective::sum,
-            .name = name.str() + std::to_string(i),
-        };
-        fs.push_back(make_ready_future(w));
+
+    template <typename T>
+    int operator()(const std::vector<size_t> &counts) const
+    {
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        const stdml::collective::dtype dt = stdml::collective::type<T>();
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::group_all_reduce(n=" << counts.size()
+             << ", "
+             << "dtype=" << dt_name << ")";
+
+        using Tensor = std::vector<T>;
+        std::vector<Tensor> xs;
+        std::vector<Tensor> ys;
+        std::vector<Tensor> zs;
+        for (auto i : std::views::iota((size_t)0, counts.size())) {
+            xs.emplace_back(counts[i]);
+            ys.emplace_back(counts[i]);
+            zs.emplace_back(counts[i]);
+            init(xs[i], ys[i], zs[i]);
+        }
+        std::vector<std::future<stdml::collective::workspace>> fs;
+        for (auto i : std::views::iota((size_t)0, counts.size())) {
+            stdml::collective::workspace w = {
+                .send = xs[i].data(),
+                .recv = ys[i].data(),
+                .count = counts[i],
+                .dt = dt,
+                .op = stdml::collective::sum,
+                .name = name.str() + std::to_string(i),
+            };
+            fs.push_back(make_ready_future(w));
+        }
+        sess.group_all_reduce(std::move(fs));
+        if (ys != zs) {
+            std::stringstream msg;
+            msg << "Failed " << name.str();
+            std::cerr << msg.str() << std::endl;
+            return 1;
+        }
+        return 0;
     }
-    sess.group_all_reduce(std::move(fs));
-    if (ys != zs) {
-        std::stringstream msg;
-        msg << "Failed " << name.str();
-        std::cerr << msg.str() << std::endl;
-        return 1;
-    }
-    return 0;
-}
+};
 
 template <typename Init>
 int test_group_all_reduce_all(stdml::collective::session &sess,
                               const std::vector<size_t> &counts)
 {
     Init init(sess.rank(), sess.size());
-    int f = 0;
-    f += test_group_all_reduce<int8_t>(sess, counts, init);
-    f += test_group_all_reduce<int16_t>(sess, counts, init);
-    f += test_group_all_reduce<int32_t>(sess, counts, init);
-    f += test_group_all_reduce<int64_t>(sess, counts, init);
-
-    f += test_group_all_reduce<uint8_t>(sess, counts, init);
-    f += test_group_all_reduce<uint16_t>(sess, counts, init);
-    f += test_group_all_reduce<uint32_t>(sess, counts, init);
-    f += test_group_all_reduce<uint64_t>(sess, counts, init);
-
-    f += test_group_all_reduce<float>(sess, counts, init);
-    f += test_group_all_reduce<double>(sess, counts, init);
-    return f;
+    return for_all_types(test_group_all_reduce(&sess, &init), 0, counts);
 }
 
 int main()
