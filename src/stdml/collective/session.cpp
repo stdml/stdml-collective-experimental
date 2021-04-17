@@ -46,9 +46,6 @@ session::session(system_config config, size_t version, size_t rank,
     barrier();
 }
 
-extern void run_graphs(session *sess, const workspace &w,
-                       const std::vector<const graph *> &gs);
-
 void session::broadcast(const void *input, void *output, size_t count, dtype dt,
                         std::string name)
 {

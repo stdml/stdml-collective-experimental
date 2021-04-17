@@ -86,6 +86,10 @@ class session
 
     void all_reduce(const void *input, void *output, size_t count, dtype dt,
                     reduce_op op, std::string name = "");
+
+    void all_gather(const void *input, void *output, size_t count, dtype dt,
+                    std::string name = "");
+
     void broadcast(const void *input, void *output, size_t count, dtype dt,
                    std::string name = "");
 
@@ -132,6 +136,13 @@ class session
         T y;
         all_reduce(&x, &y, 1, op);
         return y;
+    }
+
+    template <typename R>
+    void all_gather(const R *input, R *output, const size_t count,
+                    const std::string &name = "")
+    {
+        all_gather(input, output, count, type<R>(), name);
     }
 
     bool consistent(const void *ptr, size_t size);
