@@ -12,6 +12,7 @@ ADD_BINARY(tests/integration/test_leak.cpp)
 
 ADD_EXECUTABLE(test-c++17 tests/build/c++17.cpp)
 SET_PROPERTY(TARGET test-c++17 PROPERTY CXX_STANDARD 17)
+TARGET_LINK_LIBRARIES(test-c++17 stdml-collective)
 
 OPTION(USE_CATCH2 "Use Catch2." OFF)
 
