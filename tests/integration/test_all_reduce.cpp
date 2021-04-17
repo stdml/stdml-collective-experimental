@@ -77,52 +77,56 @@ struct test_data_2 {
     }
 };
 
-template <typename T, typename Init>
-int test_all_reduce(stdml::collective::session &sess, size_t count, Init &init)
+template <typename Init>
+class test_all_reduce
 {
-    const stdml::collective::dtype dt = stdml::collective::type<T>();
-    const std::string dt_name = type_name<T>();
-    std::stringstream name;
-    name << type_name<Init>() << "::all_reduce(count=" << count << ", "
-         << "dtype=" << dt_name << ")";
+    stdml::collective::session *sess_;
+    Init *init_;
 
-    std::vector<T> x(count);
-    std::vector<T> y(count);
-    std::vector<T> z(count);
-    init(x, y, z);
-
-    sess.all_reduce(x.data(), y.data(), count, dt, stdml::collective::sum,
-                    name.str());
-    if (!std::equal(y.begin(), y.end(), z.begin())) {
-        std::stringstream msg;
-        msg << "Failed " << name.str()  //
-            << " want: " << show_value(z[0]) << ", got: " << show_value(y[0]);
-        std::cerr << msg.str() << std::endl;
-        return 1;
-    } else {
-        // std::cout << "OK " << name.str() << std::endl;
-        return 0;
+  public:
+    test_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
     }
-}
+
+    template <typename T>
+    int operator()(size_t count) const
+    {
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        const stdml::collective::dtype dt = stdml::collective::type<T>();
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::all_reduce(count=" << count << ", "
+             << "dtype=" << dt_name << ")";
+
+        std::vector<T> x(count);
+        std::vector<T> y(count);
+        std::vector<T> z(count);
+        init(x, y, z);
+
+        sess.all_reduce(x.data(), y.data(), count, dt, stdml::collective::sum,
+                        name.str());
+        if (!std::equal(y.begin(), y.end(), z.begin())) {
+            std::stringstream msg;
+            msg << "Failed " << name.str()  //
+                << " want: " << show_value(z[0])
+                << ", got: " << show_value(y[0]);
+            std::cerr << msg.str() << std::endl;
+            return 1;
+        } else {
+            // std::cout << "OK " << name.str() << std::endl;
+            return 0;
+        }
+    }
+};
 
 template <typename Init>
 int test_all_reduce_all(stdml::collective::session &sess, size_t count)
 {
     Init init(sess.rank(), sess.size());
-    int f = 0;
-    f += test_all_reduce<int8_t>(sess, count, init);
-    f += test_all_reduce<int16_t>(sess, count, init);
-    f += test_all_reduce<int32_t>(sess, count, init);
-    f += test_all_reduce<int64_t>(sess, count, init);
-
-    f += test_all_reduce<uint8_t>(sess, count, init);
-    f += test_all_reduce<uint16_t>(sess, count, init);
-    f += test_all_reduce<uint32_t>(sess, count, init);
-    f += test_all_reduce<uint64_t>(sess, count, init);
-
-    f += test_all_reduce<float>(sess, count, init);
-    f += test_all_reduce<double>(sess, count, init);
-    return f;
+    return for_all_types(test_all_reduce(&sess, &init), 0, count);
 }
 
 template <typename T>
@@ -135,10 +139,12 @@ std::future<T> make_ready_future(T x)
 }
 
 template <typename Init>
-struct test_group_all_reduce {
+class test_group_all_reduce
+{
     stdml::collective::session *sess_;
     Init *init_;
 
+  public:
     test_group_all_reduce(stdml::collective::session *sess, Init *init)
         : sess_(sess), init_(init)
     {
