@@ -144,8 +144,6 @@ class test_inplace_all_reduce
     template <typename T>
     int operator()(size_t count) const
     {
-        printf("test_inplace_all_reduce\n");
-
         constexpr auto dt = stdml::collective::type<T>();
         auto &sess = *sess_;
         Init &init = *init_;
