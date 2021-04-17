@@ -7,4 +7,4 @@ fi
 
 ./configure --prefix=$PREFIX --shared --disable-cxx11-abi
 
-make install -j 8
+make install -j $(nproc)

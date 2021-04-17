@@ -5,7 +5,7 @@ set -e
 
 rebuild() {
     ./configure --tests
-    make -j 8
+    make -j $(nproc)
 }
 
 kungfu_run_flags() {
@@ -42,15 +42,18 @@ test_all() {
     done
 }
 
-trace rebuild
+main() {
+    trace rebuild
 
-trace test_all 16 ./bin/test-broadcast
+    trace test_all 16 ./bin/test-broadcast
 
-export STDML_COLLECTIVE_USE_THREAD_POOL=0
-trace test_all 16 ./bin/test-all-reduce
+    export STDML_COLLECTIVE_USE_THREAD_POOL=0
+    trace test_all 16 ./bin/test-all-reduce
 
-export STDML_COLLECTIVE_USE_THREAD_POOL=1
-trace test_all 16 ./bin/test-all-reduce
+    export STDML_COLLECTIVE_USE_THREAD_POOL=1
+    trace test_all 16 ./bin/test-all-reduce
 
-# export STDML_COLLECTIVE_USE_ASYNC=1
-# trace test_all 16 ./bin/test-all-reduce
+    trace test_all 16 ./bin/test-all-gather
+}
+
+main

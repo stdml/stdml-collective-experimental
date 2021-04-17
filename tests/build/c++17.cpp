@@ -1,3 +1,7 @@
 #include <stdml/collective>
 
-int main() { return 0; }
+int main()
+{
+    stdml::collective::show_build_info();
+    return 0;
+}

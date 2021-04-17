@@ -6,6 +6,7 @@
 
 #include <stdml/collective>
 
+#include "testing.hpp"
 #include <cxxabi.h>
 #include <std/ranges>
 
@@ -76,52 +77,103 @@ struct test_data_2 {
     }
 };
 
-template <typename T, typename Init>
-int test_all_reduce(stdml::collective::session &sess, size_t count, Init &init)
+template <typename Init>
+class test_all_reduce
 {
-    const stdml::collective::dtype dt = stdml::collective::type<T>();
-    const std::string dt_name = type_name<T>();
-    std::stringstream name;
-    name << type_name<Init>() << "::all_reduce(count=" << count << ", "
-         << "dtype=" << dt_name << ")";
+    stdml::collective::session *sess_;
+    Init *init_;
 
-    std::vector<T> x(count);
-    std::vector<T> y(count);
-    std::vector<T> z(count);
-    init(x, y, z);
-
-    sess.all_reduce(x.data(), y.data(), count, dt, stdml::collective::sum,
-                    name.str());
-    if (!std::equal(y.begin(), y.end(), z.begin())) {
-        std::stringstream msg;
-        msg << "Failed " << name.str()  //
-            << " want: " << show_value(z[0]) << ", got: " << show_value(y[0]);
-        std::cerr << msg.str() << std::endl;
-        return 1;
-    } else {
-        // std::cout << "OK " << name.str() << std::endl;
-        return 0;
+  public:
+    test_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
     }
-}
+
+    template <typename T>
+    int operator()(size_t count) const
+    {
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        constexpr auto dt = stdml::collective::type<T>();
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::all_reduce(count=" << count << ", "
+             << "dtype=" << dt_name << ")";
+
+        std::vector<T> x(count);
+        std::vector<T> y(count);
+        std::vector<T> z(count);
+        init(x, y, z);
+
+        sess.all_reduce(x.data(), y.data(), count, dt, stdml::collective::sum,
+                        name.str());
+        if (!std::equal(y.begin(), y.end(), z.begin())) {
+            std::stringstream msg;
+            msg << "Failed " << name.str()  //
+                << " want: " << show_value(z[0])
+                << ", got: " << show_value(y[0]);
+            std::cerr << msg.str() << std::endl;
+            return 1;
+        } else {
+            // std::cout << "OK " << name.str() << std::endl;
+            return 0;
+        }
+    }
+};
 
 template <typename Init>
 int test_all_reduce_all(stdml::collective::session &sess, size_t count)
 {
     Init init(sess.rank(), sess.size());
-    int f = 0;
-    f += test_all_reduce<int8_t>(sess, count, init);
-    f += test_all_reduce<int16_t>(sess, count, init);
-    f += test_all_reduce<int32_t>(sess, count, init);
-    f += test_all_reduce<int64_t>(sess, count, init);
+    return for_all_types(test_all_reduce(&sess, &init), 0, count);
+}
 
-    f += test_all_reduce<uint8_t>(sess, count, init);
-    f += test_all_reduce<uint16_t>(sess, count, init);
-    f += test_all_reduce<uint32_t>(sess, count, init);
-    f += test_all_reduce<uint64_t>(sess, count, init);
+template <typename Init>
+class test_inplace_all_reduce
+{
+    stdml::collective::session *sess_;
+    Init *init_;
 
-    f += test_all_reduce<float>(sess, count, init);
-    f += test_all_reduce<double>(sess, count, init);
-    return f;
+  public:
+    test_inplace_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
+    }
+
+    template <typename T>
+    int operator()(size_t count) const
+    {
+        constexpr auto dt = stdml::collective::type<T>();
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        std::vector<T> x(count);
+        std::vector<T> y(count);
+        std::vector<T> z(count);
+        init(x, y, z);
+        std::copy(x.begin(), x.end(), y.begin());
+
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::all_reduce(count=" << count << ", "
+             << "dtype=" << dt_name << ")";
+
+        sess.all_reduce(y.data(), y.data(), count, dt, stdml::collective::sum,
+                        name.str());
+        if (!std::equal(y.begin(), y.end(), z.begin())) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+};
+
+template <typename Init>
+int test_inplace_all_reduce_all(stdml::collective::session &sess, size_t count)
+{
+    Init init(sess.rank(), sess.size());
+    return for_all_types(test_inplace_all_reduce(&sess, &init), 0, count);
 }
 
 template <typename T>
@@ -133,92 +185,86 @@ std::future<T> make_ready_future(T x)
     return f;
 }
 
-template <typename T, typename Init>
-int test_group_all_reduce(stdml::collective::session &sess,
-                          const std::vector<size_t> &counts, Init &init)
+template <typename Init>
+class test_group_all_reduce
 {
-    const stdml::collective::dtype dt = stdml::collective::type<T>();
-    const std::string dt_name = type_name<T>();
-    std::stringstream name;
-    name << type_name<Init>() << "::group_all_reduce(n=" << counts.size()
-         << ", "
-         << "dtype=" << dt_name << ")";
+    stdml::collective::session *sess_;
+    Init *init_;
 
-    using Tensor = std::vector<T>;
-    std::vector<Tensor> xs;
-    std::vector<Tensor> ys;
-    std::vector<Tensor> zs;
-    for (auto i : std::views::iota((size_t)0, counts.size())) {
-        xs.emplace_back(counts[i]);
-        ys.emplace_back(counts[i]);
-        zs.emplace_back(counts[i]);
-        init(xs[i], ys[i], zs[i]);
+  public:
+    test_group_all_reduce(stdml::collective::session *sess, Init *init)
+        : sess_(sess), init_(init)
+    {
     }
-    std::vector<std::future<stdml::collective::workspace>> fs;
-    for (auto i : std::views::iota((size_t)0, counts.size())) {
-        stdml::collective::workspace w = {
-            .send = xs[i].data(),
-            .recv = ys[i].data(),
-            .count = counts[i],
-            .dt = dt,
-            .op = stdml::collective::sum,
-            .name = name.str() + std::to_string(i),
-        };
-        fs.push_back(make_ready_future(w));
+
+    template <typename T>
+    int operator()(const std::vector<size_t> &counts) const
+    {
+        auto &sess = *sess_;
+        Init &init = *init_;
+
+        constexpr auto dt = stdml::collective::type<T>();
+        const std::string dt_name = type_name<T>();
+        std::stringstream name;
+        name << type_name<Init>() << "::group_all_reduce(n=" << counts.size()
+             << ", "
+             << "dtype=" << dt_name << ")";
+
+        using Tensor = std::vector<T>;
+        std::vector<Tensor> xs;
+        std::vector<Tensor> ys;
+        std::vector<Tensor> zs;
+        for (auto i : std::views::iota((size_t)0, counts.size())) {
+            xs.emplace_back(counts[i]);
+            ys.emplace_back(counts[i]);
+            zs.emplace_back(counts[i]);
+            init(xs[i], ys[i], zs[i]);
+        }
+        std::vector<std::future<stdml::collective::workspace>> fs;
+        for (auto i : std::views::iota((size_t)0, counts.size())) {
+            stdml::collective::workspace w = {
+                .send = xs[i].data(),
+                .recv = ys[i].data(),
+                .count = counts[i],
+                .dt = dt,
+                .op = stdml::collective::sum,
+                .name = name.str() + std::to_string(i),
+            };
+            fs.push_back(make_ready_future(w));
+        }
+        sess.group_all_reduce(std::move(fs));
+        if (ys != zs) {
+            std::stringstream msg;
+            msg << "Failed " << name.str();
+            std::cerr << msg.str() << std::endl;
+            return 1;
+        }
+        return 0;
     }
-    sess.group_all_reduce(std::move(fs));
-    if (ys != zs) {
-        std::stringstream msg;
-        msg << "Failed " << name.str();
-        std::cerr << msg.str() << std::endl;
-        return 1;
-    }
-    return 0;
-}
+};
 
 template <typename Init>
 int test_group_all_reduce_all(stdml::collective::session &sess,
                               const std::vector<size_t> &counts)
 {
     Init init(sess.rank(), sess.size());
-    int f = 0;
-    f += test_group_all_reduce<int8_t>(sess, counts, init);
-    f += test_group_all_reduce<int16_t>(sess, counts, init);
-    f += test_group_all_reduce<int32_t>(sess, counts, init);
-    f += test_group_all_reduce<int64_t>(sess, counts, init);
-
-    f += test_group_all_reduce<uint8_t>(sess, counts, init);
-    f += test_group_all_reduce<uint16_t>(sess, counts, init);
-    f += test_group_all_reduce<uint32_t>(sess, counts, init);
-    f += test_group_all_reduce<uint64_t>(sess, counts, init);
-
-    f += test_group_all_reduce<float>(sess, counts, init);
-    f += test_group_all_reduce<double>(sess, counts, init);
-    return f;
+    return for_all_types(test_group_all_reduce(&sess, &init), 0, counts);
 }
 
 int main()
 {
     auto peer = stdml::collective::peer::from_env();
     stdml::collective::session sess = peer.join();
-    const std::vector<size_t> counts({
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        100,
-        1024,
-    });
+    const std::vector<size_t> counts = {
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1024,
+    };
     int failed = 0;
     for (auto count : counts) {
         failed += test_all_reduce_all<test_data_1>(sess, count);
         failed += test_all_reduce_all<test_data_2>(sess, count);
+
+        failed += test_inplace_all_reduce_all<test_data_1>(sess, count);
+        failed += test_inplace_all_reduce_all<test_data_2>(sess, count);
     }
     failed += test_group_all_reduce_all<test_data_1>(sess, counts);
     failed += test_group_all_reduce_all<test_data_2>(sess, counts);
