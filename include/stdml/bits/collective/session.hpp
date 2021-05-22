@@ -93,6 +93,12 @@ class session
     void broadcast(const void *input, void *output, size_t count, dtype dt,
                    std::string name = "");
 
+    void recv(void *output, size_t count, dtype dt, size_t target,
+              std::string name = "");
+
+    void send(const void *input, size_t count, dtype dt, size_t target,
+              std::string name = "");
+
     template <typename R>
     void all_reduce(const R *begin1, R *begin2, const size_t count,
                     const std::string &name = "")
