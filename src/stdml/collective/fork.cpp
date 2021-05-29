@@ -2,6 +2,7 @@
 
 #include <stdml/bits/collective/peer.hpp>
 
+#include <sys/wait.h>
 #include <unistd.h>
 
 namespace stdml::collective
