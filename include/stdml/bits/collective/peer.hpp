@@ -41,6 +41,8 @@ class peer
     static peer from_kungfu_env();
     static peer from_ompi_env();
     static peer from_env();
+    // static peer from_fork(size_t n);
+    static peer from_fork(size_t rank, size_t size);
 
     const system_config &config() const
     {
@@ -62,4 +64,6 @@ class peer
 
     resize_result resize(std::unique_ptr<session> &, size_t);
 };
+
+void prun(int n, const std::function<void(session &)> &g);
 }  // namespace stdml::collective
