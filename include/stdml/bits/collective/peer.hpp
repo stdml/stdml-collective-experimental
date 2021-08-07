@@ -55,8 +55,11 @@ class peer
     std::unique_ptr<session> join_elastic();
 
     using config_prodiver = std::function<std::optional<cluster_config>()>;
+    using config_committer = std::function<void(cluster_config, int)>;
 
-    resize_result resize(std::unique_ptr<session> &, const config_prodiver &);
+    resize_result
+    resize(std::unique_ptr<session> &, const config_prodiver &,
+           const config_committer &commit = commit_cluster_config);
 
     resize_result resize(std::unique_ptr<session> &);
 
