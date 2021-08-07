@@ -129,9 +129,12 @@ cluster_config cluster_config::resize(size_t new_size) const
 {
     auto new_runners = runners;
     auto new_workers = workers;
-    if (new_size <= runners.size()) {
+    if (new_size <= workers.size()) {
         new_workers.resize(new_size);
         return cluster_config(std::move(new_runners), std::move(new_workers));
+    }
+    if (runners.size() <= 0) {
+        return *this;
     }
     std::map<uint32_t, std::vector<uint16_t>> used_ports;
     // for (const auto &r : runners) {

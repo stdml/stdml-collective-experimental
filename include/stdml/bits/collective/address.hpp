@@ -108,4 +108,6 @@ struct cluster_config {
 };
 
 std::ostream &operator<<(std::ostream &os, const cluster_config &);
+
+cluster_config get_init_cluster_config_from_env();
 }  // namespace stdml::collective

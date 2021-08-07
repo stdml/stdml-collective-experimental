@@ -13,6 +13,7 @@
 #include <stdml/bits/collective/mailbox.hpp>
 #include <stdml/bits/collective/peer.hpp>
 #include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/xterm.hpp>
 
 namespace stdml::collective
 {
@@ -167,9 +168,9 @@ std::unique_ptr<session> peer::join_elastic()
     return std::unique_ptr<session>(new session(std::move(sess)));
 }
 
-#ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
 resize_result peer::resize(std::unique_ptr<session> &sess,
-                           const config_prodiver &get_config)
+                           const peer::config_prodiver &get_config,
+                           const peer::config_committer &commit_config)
 {
     auto old_cluster = sess->cluster();
     auto new_cluster = [&] {
@@ -185,7 +186,7 @@ resize_result peer::resize(std::unique_ptr<session> &sess,
         }
     }();
     if (old_cluster == new_cluster) {
-        log() << "ignore unchanged resize";
+        log() << xt_green("ignore") << "unchanged resize";
         return {false, false};
     }
     resize_result result = {
@@ -194,7 +195,7 @@ resize_result peer::resize(std::unique_ptr<session> &sess,
             new_cluster.workers.rank(self_) >= new_cluster.workers.size(),
     };
     auto new_version = sess->version() + 1;
-    commit_cluster_config(new_cluster, new_version);
+    commit_config(new_cluster, new_version);
     if (result.detached) {
         return result;
     }
@@ -210,9 +211,16 @@ resize_result peer::resize(std::unique_ptr<session> &sess,
     return result;
 }
 
+resize_result peer::resize(std::unique_ptr<session> &sess,
+                           const peer::config_prodiver &get_config)
+{
+    return resize(sess, get_config, commit_cluster_config);
+}
+
+#ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
 resize_result peer::resize(std::unique_ptr<session> &sess)
 {
-    return resize(sess, get_cluster_config);
+    return resize(sess, get_cluster_config, commit_cluster_config);
 }
 
 resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
@@ -224,13 +232,13 @@ resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
 #else
 resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
 {
-    log() << __func__ << "NOT enabled";
+    log() << __func__ << xt_yellow("NOT enabled");
     return {false, false};
 }
 
 resize_result peer::resize(std::unique_ptr<session> &sess)
 {
-    log() << __func__ << "NOT enabled";
+    log() << __func__ << xt_yellow("NOT enabled");
     return {false, false};
 }
 #endif
