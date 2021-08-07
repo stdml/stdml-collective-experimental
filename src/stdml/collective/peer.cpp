@@ -13,6 +13,7 @@
 #include <stdml/bits/collective/mailbox.hpp>
 #include <stdml/bits/collective/peer.hpp>
 #include <stdml/bits/collective/rchan.hpp>
+#include <stdml/bits/collective/xterm.hpp>
 
 namespace stdml::collective
 {
@@ -185,7 +186,7 @@ resize_result peer::resize(std::unique_ptr<session> &sess,
         }
     }();
     if (old_cluster == new_cluster) {
-        log() << "ignore unchanged resize";
+        log() << xt_green("ignore") << "unchanged resize";
         return {false, false};
     }
     resize_result result = {
@@ -210,6 +211,12 @@ resize_result peer::resize(std::unique_ptr<session> &sess,
     return result;
 }
 
+resize_result peer::resize(std::unique_ptr<session> &sess,
+                           const peer::config_prodiver &get_config)
+{
+    return resize(sess, get_config, commit_cluster_config);
+}
+
 #ifdef STDML_COLLECTIVE_ENABLE_ELASTIC
 resize_result peer::resize(std::unique_ptr<session> &sess)
 {
@@ -225,13 +232,13 @@ resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
 #else
 resize_result peer::resize(std::unique_ptr<session> &sess, size_t new_size)
 {
-    log() << __func__ << "NOT enabled";
+    log() << __func__ << xt_yellow("NOT enabled");
     return {false, false};
 }
 
 resize_result peer::resize(std::unique_ptr<session> &sess)
 {
-    log() << __func__ << "NOT enabled";
+    log() << __func__ << xt_yellow("NOT enabled");
     return {false, false};
 }
 #endif
