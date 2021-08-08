@@ -11,7 +11,7 @@ class elastic_state
     std::unique_ptr<session> sess_;
     std::optional<int64_t> max_progress_;
 
-    size_t progress_;
+    int64_t progress_;
     bool synced_;
     bool detached_;
 
@@ -28,7 +28,7 @@ class elastic_state
     // TODO: implement builtin config_prodiver in C++
     // elastic_state(std::optional<int64_t> max_progress = {});
 
-    operator size_t();
+    operator int64_t();
 
     void operator++();
 

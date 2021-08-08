@@ -21,7 +21,7 @@ elastic_state::elastic_state(peer::config_prodiver get_config,
 // {
 // }
 
-elastic_state::operator size_t()
+elastic_state::operator int64_t()
 {
     sync();
     return progress_;
