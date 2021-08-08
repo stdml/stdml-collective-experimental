@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -44,7 +45,7 @@ void TcpServer::start()
 
     int code;
     code = addr.bind(sock_);
-    _check(code, "bind");
+    _check(code, "bind to ?:" + std::to_string(static_cast<int>(port_)));
 
     code = listen(sock_, 128);
     _check(code, "listen");
@@ -61,7 +62,8 @@ std::unique_ptr<TcpSocket> TcpServer::wait_accept()
         if (int fd = accept(sock_, nullptr, nullptr); fd < 0) {
             if (!p.ok()) {
                 p.reset();
-                log() << "accept failed for" << p.show() << "errno" << errno;
+                log() << "accept failed for" << p.show() << "errno"
+                      << strerror(errno) << '(' << errno << ')';
             }
             if (would_block()) {
                 std::this_thread::yield();
@@ -90,7 +92,7 @@ void TcpServer::serve(const Handler &handle)
         if (int fd = accept(sock_, nullptr, nullptr); fd < 0) {
             if (!p.ok()) {
                 log() << "accept failed for" << p.show() << "with errno"
-                      << errno;
+                      << strerror(errno) << '(' << errno << ')';
             }
             if (would_block()) {
                 std::this_thread::yield();

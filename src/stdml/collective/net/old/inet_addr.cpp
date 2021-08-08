@@ -37,6 +37,7 @@ int InetAddr::bind(int sock)
 
 int InetAddr::connect(int sock)
 {
+    // TODO: add a patient here
     return ::connect(sock, get(), sizeof(sockaddr_in));
 }
 }  // namespace stdml::collective

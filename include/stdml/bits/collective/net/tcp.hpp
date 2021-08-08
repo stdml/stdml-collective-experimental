@@ -20,10 +20,10 @@ constexpr uint32_t pack(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 constexpr uint32_t any_addr = pack(0, 0, 0, 0);
 constexpr uint32_t localhost = pack(127, 0, 0, 1);
 
-inline void _check(int code, const char *msg)
+inline void _check(int code, const std::string &msg)
 {
     if (code) {
-        perror(msg);
+        perror(msg.c_str());
         exit(1);
     }
 }

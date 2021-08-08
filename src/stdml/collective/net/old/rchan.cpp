@@ -257,7 +257,8 @@ class server_impl : public server
         tcp_server_.reset(new TcpServer(id.port));
         log() << "tcp_server_ created";
         tcp_server_->start();
-        log() << "tcp_server_ started";
+        log() << "tcp_server_ started at :" +
+                     std::to_string(static_cast<int>(id.port));
     }
 
     void serve_loop()
