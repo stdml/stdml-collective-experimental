@@ -1,6 +1,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 
@@ -71,7 +72,13 @@ int TcpSocket::recv(void *data, size_t size, int &ec)
 {
     int n = recv_all((char *)data, size);
     if (n != (int)size) {
-        printf("TcpSocket::recv with ec %d\n", errno);
+        if (errno) {
+            fprintf(stderr, "TcpSocket::recv with ec %d (%s)\n", errno,
+                    strerror(errno));
+            // shouldn't throw, caller should handle ec
+        } else {
+            // stopped
+        }
         ec = 1;
     }
     return n;
