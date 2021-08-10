@@ -62,6 +62,7 @@ enum reduce_op {
     min,
     max,
     prod,
+    bit_xor,
 };
 
 void reduce(void *x, const void *y, const void *z, size_t count, dtype dt,

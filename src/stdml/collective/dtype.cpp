@@ -51,6 +51,32 @@ struct std_max {
     }
 };
 
+template <typename T>
+struct std_xor {
+    T operator()(const T &x, const T &y) const
+    {
+        return x ^ y;
+    }
+};
+
+template <>
+struct std_xor<float> {
+    using T = float;
+    T operator()(const T &x, const T &y) const
+    {
+        throw std::invalid_argument("xor does't support float");
+    }
+};
+
+template <>
+struct std_xor<double> {
+    using T = double;
+    T operator()(const T &x, const T &y) const
+    {
+        throw std::invalid_argument("xor does't support double");
+    }
+};
+
 struct __workspace {
     const void *input1;
     const void *input2;
@@ -75,8 +101,11 @@ struct __workspace {
         case prod:
             std::transform(x, x + n, y, z, std::multiplies<T>());
             break;
+        case bit_xor:
+            std::transform(x, x + n, y, z, std_xor<T>());
+            break;
         default:
-            exit(1);
+            throw std::invalid_argument("unknown reduce op");
         }
     }
 
