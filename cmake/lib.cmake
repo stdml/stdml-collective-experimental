@@ -2,12 +2,7 @@ OPTION(BUILD_LIB "Build static lib." ON)
 OPTION(BUILD_SHARED "Build shared lib." OFF)
 OPTION(ENABLE_COROUTINE "Enable coroutine." OFF)
 
-FILE(
-    GLOB
-    SRCS #
-    ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/stdml/collective/net/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/stdml/collective/net/*.c)
+FILE(GLOB SRCS ${CMAKE_SOURCE_DIR}/src/stdml/collective/*.cpp)
 
 FUNCTION(ADD_STDML_COLLECTIVE_SOURCES target)
     IF(APPLE)
@@ -16,17 +11,14 @@ FUNCTION(ADD_STDML_COLLECTIVE_SOURCES target)
         SET(STDML_PLATFORM linux)
     ENDIF()
 
-    TARGET_SOURCE_TREE(
-        ${target}
-        ${CMAKE_SOURCE_DIR}/src/stdml/collective/platforms/${STDML_PLATFORM}/*)
+    TARGET_SOURCE_TREE(${target}
+                       ${CMAKE_SOURCE_DIR}/opt/platforms/${STDML_PLATFORM}/*)
 
     OPTION(USE_STD_CXX_NET "" OFF)
     IF(USE_STD_CXX_NET)
-        TARGET_SOURCE_TREE(${target}
-                           ${CMAKE_SOURCE_DIR}/src/stdml/collective/net/c++20/*)
+        TARGET_SOURCE_TREE(${target} ${CMAKE_SOURCE_DIR}/opt/net/c++20/*)
     ELSE()
-        TARGET_SOURCE_TREE(${target}
-                           ${CMAKE_SOURCE_DIR}/src/stdml/collective/net/old/*)
+        TARGET_SOURCE_TREE(${target} ${CMAKE_SOURCE_DIR}/opt/net/old/*)
     ENDIF()
 ENDFUNCTION()
 
@@ -38,25 +30,20 @@ FUNCTION(SET_LIB_STDML_COLLECTIVE_OPTIONS target)
     ENDIF()
     TARGET_LINK_LIBRARIES(${target} Threads::Threads)
     IF(HAVE_GO_RUNTIME)
-        TARGET_SOURCES(
-            ${target}
-            PRIVATE ${CMAKE_SOURCE_DIR}/src/stdml/collective/runtimes/go.cpp)
+        TARGET_SOURCES(${target}
+                       PRIVATE ${CMAKE_SOURCE_DIR}/opt/runtimes/go.cpp)
         TARGET_USE_GO_RUNTIME(${target})
         TARGET_COMPILE_DEFINITIONS(${target}
                                    PRIVATE -DSTDML_COLLECTIVE_HAVE_GO_RUNTIME=1)
     ENDIF()
     IF(ENABLE_ELASTIC)
-        TARGET_SOURCES(
-            ${target}
-            PRIVATE ${CMAKE_SOURCE_DIR}/src/stdml/collective/elastic/elastic.cpp
-        )
+        TARGET_SOURCES(${target}
+                       PRIVATE ${CMAKE_SOURCE_DIR}/opt/elastic/elastic.cpp)
         TARGET_COMPILE_OPTIONS(${target}
                                PRIVATE -DSTDML_COLLECTIVE_ENABLE_ELASTIC=1)
         # TARGET_LINK_LIBRARIES(${target} kungfu-elastic-cgo)
         TARGET_LINK_LIBRARIES(
-            ${target}
-            ${CMAKE_SOURCE_DIR}/src/stdml/collective/elastic/libkungfu-elastic-cgo.a
-        )
+            ${target} ${CMAKE_SOURCE_DIR}/opt/elastic/libkungfu-elastic-cgo.a)
     ENDIF()
 ENDFUNCTION()
 
