@@ -18,10 +18,10 @@ run_test_set() {
 }
 
 bench_all() {
-    # run_test_set testdata/test-set-1.txt
-    measure bench_one resnet50 testdata/resnet50.txt
-    measure bench_one vgg16 testdata/vgg16.txt
-    # bench_one bert testdata/bert.txt
+    # run_test_set tests/data/test-set-1.txt
+    measure bench_one resnet50 tests/data/resnet50.txt
+    measure bench_one vgg16 tests/data/vgg16.txt
+    # bench_one bert tests/data/bert.txt
 }
 
 summary() {
