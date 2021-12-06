@@ -26,7 +26,7 @@ void TcpClient::dial(int *ret)
     InetAddr addr(port_, host_);
     int code;
     code = addr.connect(sock_);
-    if (*ret) {
+    if (ret) {
         *ret = code;
         return;
     }
