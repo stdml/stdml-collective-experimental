@@ -85,7 +85,7 @@ void TcpServer::serve(const Handler &handle)
 {
     set_non_blocking(sock_);
     patient p(5);
-    for (int i = 0;; ++i) {
+    for (;;) {
         if (stopped_.load()) {
             break;
         }

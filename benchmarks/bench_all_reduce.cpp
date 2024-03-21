@@ -32,9 +32,10 @@ std::string show_rate(double gibps)
 {
     char line[64];
     if (gibps >= 1) {
-        sprintf(line, "%.3f GiB/s", gibps);
+        std::snprintf(line, sizeof(line), "%.3f GiB/s", gibps);
     } else {
-        sprintf(line, "%.3f GiB/s (%.3f MiB/s)", gibps, gibps * 1024);
+        std::snprintf(line, sizeof(line), "%.3f GiB/s (%.3f MiB/s)", gibps,
+                      gibps * 1024);
     }
     return line;
 }

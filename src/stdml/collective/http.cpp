@@ -93,9 +93,9 @@ std::string http_make_request(const char *method, const char *host, int port,
 {
     std::stringstream ss;
     char req_line[1 << 8];
-    sprintf(req_line, "%s %s HTTP/1.1", method, path);
+    std::snprintf(req_line, sizeof(req_line), "%s %s HTTP/1.1", method, path);
     char host_line[1 << 8];
-    sprintf(host_line, "Host: %s:%d", host, port);
+    std::snprintf(host_line, sizeof(host_line), "Host: %s:%d", host, port);
     ss << req_line << "\r\n"
        << host_line << "\r\n"
        << "\r\n";

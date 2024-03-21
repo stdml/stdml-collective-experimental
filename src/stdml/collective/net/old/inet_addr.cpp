@@ -25,7 +25,7 @@ InetAddr::InetAddr(uint16_t port, uint32_t host) : addr_(new sockaddr_in)
         char ip[16];
         int a, b, c, d;
         unpack(host, a, b, c, d);
-        sprintf(ip, "%d.%d.%d.%d", a, b, c, d);
+        std::snprintf(ip, sizeof(ip), "%d.%d.%d.%d", a, b, c, d);
         inet_pton(AF_INET, ip, &addr_->sin_addr);
     }
 }

@@ -158,9 +158,9 @@ class scope_rate_logger
         char line[32];
         double rate = size / d.count();
         if (rate > (1 << 30)) {
-            sprintf(line, "%.3f GiB/s", rate / (1 << 30));
+            std::snprintf(line, sizeof(line), "%.3f GiB/s", rate / (1 << 30));
         } else {
-            sprintf(line, "%.3f MiB/s", rate / (1 << 20));
+            std::snprintf(line, sizeof(line), "%.3f MiB/s", rate / (1 << 20));
         }
         return line;
     }
